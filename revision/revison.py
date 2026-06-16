@@ -63,3 +63,20 @@ def top_k_sampling(
     return np.random.choice(top_k_index, p=top_k_probs)
     
     
+def top_p_sampling(prob, p):
+    sorted = np.arfsort(prob)[::-1]
+    sorted_p = prob[sorted]
+    
+    cumsum = np.cumsum(sorted_p)
+    cuttoff = np.searchsorted(cumsum, p)+1
+    
+    top_indices = sorted[:cuttoff]
+    
+    top_p_probs = probs[top_indices]
+    
+    top_p_probs = top_p_probs/np.sum(top_p_probs)
+    
+    return np.random.choice(top_k_index, p=top_p_probs)
+
+def scaled_dot_product_attention(Q,K,V):
+    score = Q @ K.T
