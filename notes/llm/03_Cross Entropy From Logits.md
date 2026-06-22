@@ -51,6 +51,86 @@ def ce_from_logits_batch(logits, y_onehot):
     return np.mean(ce)
 ```
 
+## Step-by-Step (Sparse Labels, Interview Style)
+
+### What Are We Given?
+
+Not probabilities. We are given logits and class indices.
+
+```python
+logits = np.array([
+    [2, 1, 0],
+    [5, 3, 1]
+])
+# shape: (B, C)
+
+labels = np.array([1, 0])
+# shape: (B,)
+```
+
+### Naive Approach
+
+```python
+probs = softmax(logits)
+loss = -np.log(probs[np.arange(B), labels])
+```
+
+This works, but can overflow for large logits (e.g., `exp(1000)`).
+
+### Stable Approach
+
+Instead of `softmax -> log -> cross entropy`, compute CE directly from logits.
+
+### Step 1: Extract correct-class logits
+
+```python
+B = logits.shape[0]
+z_correct = logits[np.arange(B), labels]
+```
+
+For the example above, `z_correct = [1, 5]`.
+
+### Step 2: Compute stable logsumexp
+
+```python
+m = np.max(logits, axis=-1, keepdims=True)
+shifted = logits - m
+
+logsumexp = (
+    np.log(np.sum(np.exp(shifted), axis=-1))
+    + m.squeeze(-1)
+)
+```
+
+### Step 3: Per-sample loss
+
+```python
+loss = -z_correct + logsumexp
+```
+
+### Step 4: Batch mean
+
+```python
+final_loss = np.mean(loss)
+```
+
+### Full Sparse Implementation
+
+```python
+def ce_from_logits_sparse(logits, labels):
+    # logits: (B, C), labels: (B,)
+    B = logits.shape[0]
+
+    z_correct = logits[np.arange(B), labels]
+
+    m = np.max(logits, axis=-1, keepdims=True)
+    shifted = logits - m
+    logsumexp = np.log(np.sum(np.exp(shifted), axis=-1)) + m.squeeze(-1)
+
+    loss = -z_correct + logsumexp
+    return np.mean(loss)
+```
+
 ## Key Gradient Result
 
 Softmax + CE simplifies to:
