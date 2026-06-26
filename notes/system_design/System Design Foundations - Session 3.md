@@ -231,3 +231,156 @@ Before proposing architecture:
 - [ ] What is the dominant resource? (CPU, memory, disk, network?)
 - [ ] Can a single machine handle this? If not, what must be distributed?
 - [ ] What is the read-to-write ratio?
+
+---
+
+## L5 Additions: ML/GPU Scale Estimation
+
+### GPU Memory Estimation
+
+```
+GPU Memory = Model Weights + KV Cache + Activations + Framework Overhead
+
+Model Weights:
+  FP16:  2 bytes × N_params
+  INT8:  1 byte  × N_params
+  INT4:  0.5 bytes × N_params
+
+KV Cache (per token, per layer):
+  2 × n_kv_heads × head_dim × 2 bytes (FP16)
+  
+  LLaMA-2 7B:  2 × 32 × 128 × 2 = 16 KB/token/layer × 32 layers = 512 KB/token
+  LLaMA-2 70B: 2 × 8 × 128 × 2 = 4 KB/token/layer × 80 layers = 320 KB/token (GQA)
+```
+
+### LLM Serving Capacity Example
+
+```
+Model: LLaMA-2 70B (FP16)
+GPU: 4x A100 80GB (tensor parallelism = 4)
+
+Weights:  140 GB / 4 GPUs = 35 GB/GPU
+Available for KV cache per GPU: 80 - 35 - 5 (overhead) = 40 GB
+
+KV cache per token (with GQA): 320 KB/token
+Max concurrent tokens per GPU: 40 GB / 320 KB = 125,000 tokens
+Total across 4 GPUs: 500,000 tokens
+
+If average context = 2048 tokens:
+  Max concurrent requests = 500,000 / 2048 ≈ 244 requests
+
+If average response = 200 tokens at 50 tokens/sec:
+  Throughput = 244 × 50 = 12,200 tokens/sec
+```
+
+### Embedding/Vector DB Estimation
+
+```
+Documents: 10M documents
+Chunk size: 512 tokens → ~20M chunks (avg 2 chunks/doc)
+Embedding dim: 1024 (bge-large)
+Storage per vector: 1024 × 4 bytes (FP32) = 4 KB
+
+Total vector storage: 20M × 4 KB = 80 GB
+HNSW index overhead: ~1.5x → 120 GB
+Metadata storage: ~20 GB (Postgres)
+
+Total: ~140 GB — fits on a single machine with 256 GB RAM
+```
+
+### Training Compute Estimation
+
+```
+Training FLOPs ≈ 6 × N_params × N_tokens
+
+Example: Fine-tuning 7B model on 1B tokens
+  FLOPs = 6 × 7B × 1B = 4.2 × 10^19 FLOPs
+  
+A100 GPU: ~312 TFLOPS (FP16)
+  Time = 4.2 × 10^19 / (312 × 10^12) = 134,615 seconds ≈ 37 hours
+  
+With 8 GPUs (data parallel): ~4.7 hours
+With gradient checkpointing (2x compute): ~9.4 hours
+```
+
+### Inference Cost Estimation
+
+```
+Model: 70B (FP16)
+GPU: A100 80GB (cost: ~$2/hour on cloud)
+
+Tokens per second (batch=32): ~2000 tokens/sec
+Cost per 1M tokens: 
+  $2/hour / (2000 × 3600) = $0.0000278 per token
+  = $27.80 per 1M tokens
+
+With INT4 quantization (3x throughput):
+  = $9.27 per 1M tokens
+
+With model routing (80% to 8B, 20% to 70B):
+  8B cost: ~$2.78 per 1M tokens
+  Weighted average: 0.8 × 2.78 + 0.2 × 27.80 = $7.78 per 1M tokens
+```
+
+### L5 Interview Q&A
+
+#### Q: "Estimate the GPU requirements for serving a 70B model to 1M daily users."
+
+```
+1M users × 5 queries/day = 5M queries/day
+Average: 500 prompt tokens + 200 response tokens = 700 tokens/query
+Total tokens/day: 5M × 700 = 3.5B tokens/day
+
+Peak QPS (5x average): 5M / 86400 × 5 ≈ 290 QPS
+
+70B model on A100 80GB (TP=4):
+  Throughput with continuous batching: ~2000 tokens/sec per 4-GPU node
+  Nodes needed for peak: 290 QPS × 700 tokens / 2000 = ~102 nodes
+
+  That's 408 A100 GPUs — very expensive.
+
+Optimization:
+  - INT4 quantization: 3x throughput → 34 nodes (136 GPUs)
+  - Model routing (80% to 8B): 80% handled by 8B (1 GPU each)
+    - 8B nodes: 290 × 0.8 × 700 / 4000 = ~41 nodes (41 GPUs)
+    - 70B nodes: 290 × 0.2 × 700 / 6000 = ~7 nodes (28 GPUs)
+    - Total: 69 GPUs — 6x reduction
+```
+
+#### Q: "How much does it cost to train a 7B model from scratch?"
+
+```
+Chinchilla optimal: 7B params × 20 tokens/param = 140B tokens
+
+FLOPs = 6 × 7B × 140B = 5.88 × 10^21 FLOPs
+
+A100 GPU: 312 TFLOPS (FP16, with MFU ~50%): 156 TFLOPS effective
+8x A100 node: 1.25 PFLOPS effective
+
+Time = 5.88 × 10^21 / (1.25 × 10^15) = 4.7 × 10^6 seconds ≈ 54 days
+
+Cost: 8 GPUs × $2/hour × 24 × 54 = $20,736
+
+But with LLaMA-style overtraining (2T tokens):
+  FLOPs = 6 × 7B × 2T = 8.4 × 10^22
+  Time = 8.4 × 10^22 / 1.25 × 10^15 = 67M seconds ≈ 778 days (single node)
+  With 64 nodes (512 GPUs): ~12 days
+  Cost: 512 × $2 × 24 × 12 = $294,912
+```
+
+#### Q: "How do you estimate vector DB storage for 100M documents?"
+
+```
+100M documents → ~300M chunks (avg 3 chunks/doc)
+Embedding: 1024 dim, FP32 = 4 KB/vector
+Vector storage: 300M × 4 KB = 1.2 TB
+HNSW index overhead: 1.5x → 1.8 TB
+Metadata (Postgres): ~150 GB
+
+Total: ~2 TB
+
+With INT8 quantized embeddings: 500 GB + 750 GB index = 1.25 TB
+With INT4 quantized embeddings: 250 GB + 375 GB index = 625 GB
+
+Shard across 4 machines: 156 GB/machine (INT8) — fits in 256 GB RAM
+```

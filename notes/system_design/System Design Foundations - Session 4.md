@@ -392,3 +392,140 @@ When discussing any distributed design:
 - [ ] What is the cost of inconsistency in this domain?
 - [ ] What is the timeout strategy?
 - [ ] Can I explain this in terms of user impact?
+
+---
+
+## L5 Additions: ML-Specific Distributed Systems
+
+### Distributed Training Consistency
+
+#### Data Parallelism
+
+```
+GPU 0: Batch 0 → Forward → Backward → Gradients
+GPU 1: Batch 1 → Forward → Backward → Gradients
+GPU 2: Batch 2 → Forward → Backward → Gradients
+GPU 3: Batch 3 → Forward → Backward → Gradients
+                    ↓ All-Reduce ↓
+              Averaged Gradients
+                    ↓
+              Update Weights (all GPUs in sync)
+```
+
+**Consistency model**: Synchronous — all GPUs must finish before weights update. A slow GPU blocks everyone.
+
+**Failure handling**: If one GPU dies mid-step, the entire step is wasted. Checkpointing every N steps is essential.
+
+#### Model Parallelism (Tensor Parallel)
+
+```
+Weight matrix W (D × D) split across GPUs:
+  GPU 0: W[:, 0:D/2]
+  GPU 1: W[:, D/2:D]
+
+Forward: x @ W = x @ W_0 || x @ W_1 → all-reduce to combine
+```
+
+**Consistency**: Weights are sharded — no single GPU has the full model. Communication is required for every forward/backward pass.
+
+#### Pipeline Parallelism
+
+```
+GPU 0: Layer 0-19  →  GPU 1: Layer 20-39  →  GPU 2: Layer 40-59  →  GPU 3: Layer 60-79
+
+Micro-batch 1: [GPU0] → [GPU1] → [GPU2] → [GPU3]
+Micro-batch 2:       [GPU0] → [GPU1] → [GPU2] → [GPU3]
+```
+
+**Pipeline bubble**: GPU 1 waits for GPU 0, GPU 2 waits for GPU 1, etc. The bubble wastes ~50% of compute with 4 GPUs and 1 micro-batch. Mitigated with many micro-batches.
+
+### Model Replication for Inference
+
+```
+GPU Group A (4 GPUs): 70B model replica 1
+GPU Group B (4 GPUs): 70B model replica 2
+GPU Group C (4 GPUs): 70B model replica 3
+
+Load balancer distributes requests across replicas.
+Each replica is independent — no coordination needed.
+```
+
+**Key difference from training**: Inference replicas are **stateless** (except KV cache). No consensus needed. If a replica dies, the load balancer routes elsewhere.
+
+### KV Cache Consistency
+
+```
+Problem: In continuous batching, each request has its own KV cache.
+  - No consistency issue (per-request state).
+  
+Problem: Prefix caching shares KV cache across requests.
+  - If the shared prefix changes (e.g., system prompt update), all cached prefixes are invalidated.
+  - Solution: version the system prompt; old cache entries expire.
+```
+
+### Model Versioning and Rollouts
+
+```
+Blue-Green Deployment for Models:
+  Blue (current):  v1.0 serving 100% traffic
+  Green (new):     v1.1 serving 0% traffic
+
+  1. Deploy v1.1 on separate GPUs (green)
+  2. Route 5% traffic to green (canary)
+  3. Monitor quality metrics (faithfulness, latency, errors)
+  4. If good: ramp to 50% → 100%
+  5. If bad: rollback to blue (still running)
+```
+
+**Shadow deployment**: Run v1.1 in parallel (not serving users), compare outputs with v1.0. No user impact, but 2x GPU cost.
+
+### Distributed Training Failure Modes
+
+| Failure | Impact | Mitigation |
+|---|---|---|
+| **GPU dies** | Entire step lost | Checkpoint every N steps, resume from last checkpoint |
+| **Network partition** | Some GPUs can't communicate | Timeout + retry, or skip step |
+| **Slow GPU (straggler)** | Blocks all GPUs (sync training) | Gradient compression, async training (stale gradients) |
+| **OOM on one GPU** | Training crashes | Gradient checkpointing, reduce batch size, FSDP sharding |
+| **Checkpoint corruption** | Hours of progress lost | Redundant checkpoints, checksums |
+
+### L5 Interview Q&A
+
+#### Q: "How do you handle a GPU failure during distributed training?"
+
+1. **Checkpointing**: Save model state every N steps (e.g., every 100 steps or 1 hour).
+2. **Resume**: Detect failure → load last checkpoint → restart training from there.
+3. **Redundant checkpoints**: Store checkpoints on multiple storage systems (NFS + S3).
+4. **Fast resume**: Keep optimizer state in checkpoint to avoid re-warmup.
+5. **Elastic training**: Some frameworks (TorchElastic) can restart failed workers and rejoin the training group.
+
+**Cost of failure**: If checkpoint is every 1 hour and GPU dies at 59 minutes, you lose 1 hour of compute. With 512 GPUs at $2/hour, that's $1,024 per failure.
+
+#### Q: "Synchronous vs asynchronous distributed training — when to use which?"
+
+| | Synchronous | Asynchronous |
+|---|---|---|
+| **Consistency** | All GPUs use same gradients | GPUs use stale gradients from peers |
+| **Convergence** | Stable, well-understood | Can be unstable (stale gradients) |
+| **Throughput** | Limited by slowest GPU | No waiting — max throughput |
+| **When to use** | Most training (preferred) | Very large clusters where stragglers are common |
+
+**Modern practice**: Synchronous with gradient compression (reduce communication) and overlap of compute/communication. Async is rarely used for LLM training because stale gradients cause quality issues.
+
+#### Q: "How do you roll out a new model version without downtime?"
+
+1. **Blue-green**: Deploy new version on separate GPUs. Switch traffic when ready.
+2. **Canary**: Route small % of traffic to new model. Monitor metrics. Ramp up.
+3. **Shadow**: Run new model in parallel, compare outputs (no user impact).
+4. **Rolling update**: Replace GPU groups one at a time (some downtime risk).
+5. **Multi-LoRA**: If only adapter changed, hot-swap LoRA weights (no GPU restart needed).
+
+**Monitoring during rollout**: faithfulness, hallucination rate, latency, user feedback. Auto-rollback if metrics degrade beyond threshold.
+
+#### Q: "What's the difference between model replication for inference and data parallelism for training?"
+
+**Training (data parallel)**: All replicas compute gradients → all-reduce to sync → update weights. Requires communication and consensus. Replicas must be in sync.
+
+**Inference (model replication)**: Each replica is independent. No communication needed. Load balancer routes requests. If one replica dies, others continue. Stateless (except per-request KV cache).
+
+The key insight: **training requires consensus, inference does not**. This is why inference scaling is much simpler than training scaling.

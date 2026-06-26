@@ -293,3 +293,118 @@ Before touching the whiteboard or mentioning any technology, confirm:
 - [ ] Are there any regulatory or security constraints?
 
 Only after this checklist should you begin drawing the architecture.
+
+---
+
+## L5 Additions: ML-Specific Requirements
+
+### ML System Functional Requirements
+
+For ML/LLM systems, functional requirements extend beyond traditional software:
+
+| Category | Questions to Ask |
+|---|---|
+| **Input modality** | Text only? Images? Audio? Multi-modal? |
+| **Output format** | Free text? Structured JSON? Code? Citations? |
+| **Knowledge scope** | General knowledge? Domain-specific? Real-time data? |
+| **Interaction mode** | Single-turn? Multi-turn conversation? Streaming? |
+| **Personalization** | Per-user customization? Memory across sessions? |
+| **Tool use** | Does the model need to call external APIs/tools? |
+| **Safety constraints** | What content must be blocked? What must be flagged? |
+
+### LLM System Examples
+
+#### Enterprise Document Q&A (RAG)
+
+| Requirement | Core? | Why? |
+|---|---|---|
+| Answer questions from documents | **Yes** | Core purpose |
+| Cite sources | **Yes** | Trust — without citations, answers are unverifiable |
+| Handle multi-turn follow-ups | **Yes** | Users need conversational refinement |
+| Support multiple file formats (PDF, DOCX, HTML) | No | Important but extensible |
+| Multi-language support | No | Phase 2 feature |
+| Access control per document | No | Important for enterprise but not core to Q&A |
+
+#### Coding Assistant (Copilot-style)
+
+| Requirement | Core? | Why? |
+|---|---|---|
+| Suggest code completions | **Yes** | Core purpose |
+| Context-aware (open files, imports) | **Yes** | Without context, suggestions are useless |
+| Low latency (<200ms) | **Yes** | Must appear as you type |
+| Explain suggestions | No | Useful but not core to completion |
+| Support multiple languages | No | Start with one, expand later |
+| Debug assistance | No | Separate feature |
+
+#### Content Moderation System
+
+| Requirement | Core? | Why? |
+|---|---|---|
+| Classify content as safe/unsafe | **Yes** | Core purpose |
+| Handle text + images | **Yes** | Content is multi-modal |
+| Provide reason for flagging | **Yes** | Required for appeals process |
+| Real-time scoring | No | Batch processing acceptable for many use cases |
+| Customizable thresholds | No | Important but configurable post-launch |
+
+### ML-Specific NFRs
+
+| NFR | ML-Specific Concern |
+|---|---|
+| **Latency** | TTFT vs TPOT for LLMs; model inference time vs retrieval time |
+| **Availability** | Model service downtime vs fallback to cached/simpler model |
+| **Reliability** | Model correctness — hallucination rate, factual accuracy |
+| **Scalability** | GPU memory as bottleneck; batch size vs concurrency |
+| **Security** | Prompt injection, data poisoning, model inversion attacks |
+| **Freshness** | How often is the model/knowledge base updated? |
+| **Cost** | Cost per inference; GPU-hours; API costs for external models |
+
+### L5 Interview Q&A
+
+#### Q: "What questions would you ask to clarify requirements for an LLM-powered customer support chatbot?"
+
+**Functional:**
+- What channels (web, mobile, email, API)?
+- What types of queries (FAQ, troubleshooting, account management)?
+- Does it need to escalate to human agents? When?
+- Does it need access to user account data?
+- Multi-turn conversation or single-turn Q&A?
+- What languages?
+
+**Non-functional:**
+- How many concurrent users? Peak QPS?
+- What's the acceptable response latency? (TTFT, full response time)
+- What's the hallucination tolerance? (Safety-critical vs informational)
+- What's the cost budget per query?
+- What uptime is required? (24/7 or business hours?)
+- What data privacy regulations apply? (GDPR, HIPAA, SOC2?)
+
+**ML-specific:**
+- Does it need to cite sources (RAG)?
+- Should it learn from user feedback over time?
+- What's the process for updating the knowledge base?
+- How do we handle queries the model can't answer?
+
+#### Q: "How do you determine if a feature is core vs secondary in an ML system?"
+
+Apply the **Removal Test** with an ML twist:
+
+1. **Without this feature, does the model still produce useful output?** If no → core.
+2. **Without this feature, is the output trustworthy?** If no → core (safety/grounding).
+3. **Without this feature, is the output fast enough to be usable?** If no → core (latency).
+4. **Without this feature, is the system cost-effective?** If no → core (cost constraint).
+
+Example: For a medical advice LLM:
+- Grounding in medical literature → **core** (without it, hallucinations could harm)
+- Citation of sources → **core** (trust requirement)
+- Multi-language support → secondary
+- Conversational memory → secondary
+
+#### Q: "What's the biggest mistake candidates make in ML system design interviews?"
+
+**Jumping to model architecture before understanding the problem.**
+
+Bad answer: "I'd use a 70B parameter LLM with RAG and FAISS for retrieval."
+
+Good answer: "Let me first understand who the users are, what they need, and what constraints we have. Then I'll determine whether we need RAG, what model size is appropriate, and how to serve it."
+
+The interviewer wants to see your **thinking process**, not your knowledge of tools. Requirements → Architecture → Technology. Always in that order.

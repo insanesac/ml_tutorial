@@ -150,63 +150,231 @@ Decoder asks: "What English context is relevant to generate this French token?"
 
 ---
 
-## Interview Sound Bites
+## ALiBi (Attention with Linear Biases)
 
-- Attention alone cannot model order — positional encoding fixes this.
-- Cross attention lets one sequence ask questions over another.
-- Decoder queries (`Q`), encoder provides information (`K`, `V`).
-- GPT uses **masked self-attention** only — no encoder, no cross attention.
-- N_dec and N_enc are independent — cross attention score matrix is rectangular.
+### Core Idea
+
+Instead of adding positional embeddings to the input, ALiBi adds a **linear distance penalty** directly to attention scores:
+
+```
+score(i, j) = (Q_i · K_j) / √d_k - m * |i - j|
+```
+
+Where `m` is a head-specific slope (geometrically decreasing across heads).
+
+### Why ALiBi Is Interesting
+
+- **No positional embeddings needed** — position is injected at the attention score level.
+- **Strong extrapolation**: trained on short sequences, works on longer sequences without fine-tuning.
+- **Simpler than RoPE**: no rotation, just a bias term.
+- Used in: BLOOM, MPT.
+
+### ALiBi vs RoPE
+
+| | RoPE | ALiBi |
+|---|---|---|
+| Method | Rotate Q/K vectors | Add bias to attention scores |
+| Extrapolation | Good (with NTK/YaRN scaling) | Excellent (native) |
+| Used in | LLaMA, Gemma, Mistral | BLOOM, MPT |
+| Complexity | O(N * D) rotation | O(N²) bias matrix (but cheap) |
 
 ---
 
-## Flash Attention
+## Pre-Norm vs Post-Norm
 
-### The Problem with Standard Attention
-
-Standard attention materializes the full `(N, N)` score matrix in GPU HBM (high-bandwidth memory):
+### Post-Norm (Original Transformer)
 
 ```
-scores = Q @ Kᵀ        # (N, N)  <- written to HBM
-A = softmax(scores)    # (N, N)  <- written to HBM
-out = A @ V
+x = LayerNorm(x + SubLayer(x))
 ```
 
-For long sequences this is expensive in **memory**, not compute.
+LayerNorm is applied **after** the residual connection.
 
-### Complexity Comparison
+- Used in: original Transformer paper, BERT.
+- Problem: gradients can explode/vanish in deep models because the residual path goes through LayerNorm.
+- Harder to train at scale — requires careful learning rate warmup.
 
-| | Time | Space |
+### Pre-Norm (Modern LLMs)
+
+```
+x = x + SubLayer(LayerNorm(x))
+```
+
+LayerNorm is applied **before** the sublayer, and the residual connection is **clean** (no normalization on the skip path).
+
+- Used in: GPT-2, GPT-3, LLaMA, all modern LLMs.
+- Benefit: gradient flows freely through residual path — no normalization bottleneck.
+- More stable training at scale.
+- Slightly different behavior: pre-norm models are not strictly equivalent to post-norm.
+
+### Why This Matters for L5
+
+- **Training stability**: pre-norm is the industry standard because it enables training very deep models.
+- **Gradient flow**: the clean residual path in pre-norm ensures gradients don't vanish/explode.
+- **If asked "how would you modify a transformer for stable training at scale?"**: pre-norm is one of the first answers.
+
+---
+
+## SwiGLU / GeGLU (Modern FFN Activations)
+
+### Standard FFN
+
+```
+FFN(x) = ReLU(x @ W1) @ W2
+```
+
+or with GELU:
+
+```
+FFN(x) = GELU(x @ W1) @ W2
+```
+
+### SwiGLU (Used in LLaMA, PaLM)
+
+```
+SwiGLU(x) = (Swish(x @ W_gate) * (x @ W_up)) @ W_down
+```
+
+Where:
+- `Swish(x) = x * sigmoid(x)` (also called SiLU)
+- `W_gate` and `W_up` are both `(D, D_ff)` — so there are **three** weight matrices instead of two
+- The gating mechanism allows the model to selectively pass information
+
+### GeGLU (Used in some models)
+
+Same idea but with GELU instead of Swish:
+
+```
+GeGLU(x) = (GELU(x @ W_gate) * (x @ W_up)) @ W_down
+```
+
+### Why Gated Activations Work
+
+- The multiplicative gate lets the model **selectively suppress** certain features.
+- Empirically better than ReLU/GELU on language tasks.
+- Cost: 50% more FFN parameters (3 matrices instead of 2).
+- In practice, `D_ff` is often reduced to compensate (e.g., `2/3 * 4D` instead of `4D`).
+
+### FFN Expansion Ratio
+
+| Model | Expansion | Activation |
 |---|---|---|
-| Standard Attention | O(N²) | O(N²) |
-| Flash Attention | O(N²) | O(N) |
+| Original Transformer | 4x | ReLU |
+| GPT-2 | 4x | GELU |
+| LLaMA | ~2.67x (8/3) | SwiGLU |
+| PaLM | 4x | SwiGLU |
 
-Same time complexity. Flash Attention's win is entirely **space**.
+The `8/3` ratio for LLaMA compensates for the extra gate matrix — total params ≈ `3 * (8/3) = 8` vs standard `2 * 4 = 8`.
 
-### The Insight
+---
 
-Never materialize the full N×N matrix.
+## Sliding Window Attention
 
-Instead, tile Q, K, V into blocks that fit in fast on-chip SRAM. Compute partial softmax results per block, accumulate the output incrementally, discard the block once done.
+### Core Idea
 
-The full N×N matrix is **never written to HBM**.
-
-### Why Softmax Is the Hard Part
-
-Softmax needs the full row to normalize:
+Instead of attending to all N tokens, each token only attends to a window of `W` previous tokens:
 
 ```
-A_i = exp(z_i) / Σ exp(z_j)
+Attention(i, j) = valid only if |i - j| <= W
 ```
 
-Flash Attention uses the **online softmax trick** — maintain a running max and running sum as you scan blocks, then correct at the end. This lets softmax be computed without seeing all values at once.
+### Benefits
 
-### Why It Matters
+- **O(N * W)** instead of O(N²) — linear in sequence length for fixed window.
+- **Bounded memory**: attention matrix is `(N, W)` not `(N, N)`.
+- Used in: Mistral (W=4096), Longformer, Gemma.
 
-- Longer context windows become feasible.
-- Memory cost does not explode with sequence length.
-- GPU memory is usually the bottleneck, not FLOPS.
+### Stacking Layers = Effective Receptive Field Grows
 
-### Interview Sound Bite
+With `L` layers of sliding window attention, the effective receptive field is `L * W`:
 
-> Flash Attention has the same O(N²) time complexity as standard attention but reduces space from O(N²) to O(N) by tiling computation into blocks and using the online softmax trick — the full attention matrix is never materialized in memory.
+```
+Layer 1: token sees W tokens back
+Layer 2: token sees W tokens back, each of which saw W tokens back
+...
+Layer L: effective receptive field = L * W
+```
+
+So a 32-layer model with W=4096 has an effective receptive field of 131,072 tokens.
+
+### Tradeoffs
+
+| | Full Attention | Sliding Window |
+|---|---|---|
+| Complexity | O(N²) | O(N * W) |
+| Long-range | Direct | Indirect (through layers) |
+| Memory | O(N²) | O(N * W) |
+| Quality | Best | Slightly worse for very long-range |
+
+---
+
+## FlashAttention-2 Improvements
+
+### What Changed from FlashAttention v1
+
+1. **Better work partitioning**: v1 had uneven GPU thread block utilization. v2 reduces non-MATM FLOPs and better balances work across thread blocks.
+2. **Reduced synchronization**: fewer barriers between GPU thread blocks.
+3. **Better backward pass**: recomputes attention in backward with optimal tiling.
+4. **~2x speedup** over v1 on typical sequence lengths.
+
+### Key Numbers
+
+| | Standard | FlashAttention v1 | FlashAttention v2 |
+|---|---|---|---|
+| HBM reads/writes | O(N²) | O(N² / M) | O(N² / M) |
+| Wall-clock speed | 1x | ~2-4x | ~5-8x |
+| Space | O(N²) | O(N) | O(N) |
+
+Where `M` = SRAM size. The speedup comes from reduced memory traffic, not fewer FLOPs.
+
+---
+
+## L5 Interview Q&A
+
+### Q: "Why does attention need positional encoding at all?"
+
+Attention computes `softmax(QKᵀ)V`. The dot product `Q · K` has no notion of position — it's purely content-based. Without positional encoding, "dog bites man" and "man bites dog" produce identical attention patterns because the same tokens attend to the same tokens regardless of order.
+
+### Q: "Compare sinusoidal, learned, RoPE, and ALiBi positional encodings"
+
+| | Sinusoidal | Learned | RoPE | ALiBi |
+|---|---|---|---|---|
+| Type | Absolute | Absolute | Relative | Relative |
+| Extrapolation | Poor | None | Good (with scaling) | Excellent |
+| Parameters | 0 | N * D | 0 | 0 |
+| Used in | Original Transformer | GPT-2 | LLaMA | BLOOM |
+| Mechanism | Add to embeddings | Add to embeddings | Rotate Q/K | Bias on scores |
+
+### Q: "Why is pre-norm more stable than post-norm?"
+
+In post-norm, the residual path goes through LayerNorm: `x = LN(x + f(x))`. This means gradients on the residual path are modulated by the LayerNorm, which can cause vanishing/exploding gradients in deep models.
+
+In pre-norm: `x = x + f(LN(x))`. The residual path is clean — gradients flow directly through the addition. The LayerNorm only normalizes the input to the sublayer, not the gradient highway.
+
+### Q: "What's the effective receptive field of a 32-layer sliding window model with W=4096?"
+
+`32 * 4096 = 131,072` tokens. Each layer extends the receptive field by W. This is why sliding window attention can handle long contexts despite each layer only attending to a local window.
+
+### Q: "When would you use cross attention vs self attention?"
+
+- **Self attention**: when the model should attend within the same sequence (GPT, BERT).
+- **Cross attention**: when one sequence should attend to another (encoder-decoder translation, multimodal models like LLaVA where text queries attend to image features).
+- **In practice**: decoder-only LLMs (GPT, LLaMA) use only self-attention. Encoder-decoder models (T5, BART) use both.
+
+### Q: "How does SwiGLU compare to ReLU in the FFN?"
+
+SwiGLU adds a gating mechanism: `Swish(xW_gate) * (xW_up)`. The gate allows selective suppression of features, which empirically improves language modeling. The cost is 50% more FFN parameters (3 matrices vs 2), but this is typically compensated by reducing the expansion ratio from 4x to ~2.67x.
+
+---
+
+## Interview Sound Bites
+
+- Attention alone cannot model order — positional encoding fixes this.
+- Modern LLMs use RoPE (LLaMA/Gemma/Mistral) or ALiBi (BLOOM) — not sinusoidal.
+- RoPE rotates Q/K vectors; ALiBi adds a linear distance bias to attention scores.
+- Pre-norm > post-norm for training stability at scale — the residual path must be clean.
+- SwiGLU (gated FFN) is the modern replacement for ReLU/GELU — at the cost of one extra weight matrix.
+- Sliding window attention gives O(N*W) complexity with effective receptive field = L * W.
+- FlashAttention-2 is 5-8x faster than standard attention with the same mathematical result.
+- Cross attention lets one sequence ask questions over another — used in encoder-decoder and multimodal models.
+- GPT uses **masked self-attention** only — no encoder, no cross attention.

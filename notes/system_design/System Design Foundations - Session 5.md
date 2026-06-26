@@ -412,3 +412,212 @@ When designing system infrastructure:
 - [ ] Is search needed? What index type?
 - [ ] Are large files stored in object storage?
 - [ ] Is a CDN needed for global users?
+
+---
+
+## L5 Additions: ML/LLM Infrastructure Components
+
+### GPU Cluster Architecture
+
+```
+Request → Load Balancer → Inference Server (GPU)
+                              ↓
+                    Model loaded in GPU memory
+                              ↓
+                    Forward pass → Response
+```
+
+### GPU-Specific Infrastructure
+
+| Component | Purpose | ML-Specific Concern |
+|---|---|---|
+| **GPU scheduler** | Allocate GPUs to jobs | GPU memory is the bottleneck, not just CPU |
+| **Model registry** | Store/load model weights | Versioning, A/B deployment, weight distribution |
+| **Feature store** | Serve ML features in real-time | Low-latency feature retrieval for online inference |
+| **Vector DB** | Store/retrieve embeddings | HNSW/IVF index, ANN search, metadata filtering |
+| **GPU monitoring** | Track GPU health | GPU temperature, memory usage, utilization, ECC errors |
+| **Checkpoint storage** | Save training state | High-throughput write (TBs), distributed filesystem |
+
+### Vector Database Selection
+
+| Vector DB | Type | Best For | Scale |
+|---|---|---|---|
+| **FAISS** | In-memory library | Single-machine, low latency | ~100M vectors |
+| **HNSW (hnswlib)** | In-memory graph | High recall, low latency | ~50M vectors |
+| **Pinecone** | Managed service | No-ops, auto-scaling | Billions |
+| **Weaviate** | Open-source server | Hybrid search (vector + keyword) | ~1B vectors |
+| **pgvector** | Postgres extension | Small scale, SQL integration | ~10M vectors |
+| **Milvus** | Distributed vector DB | Billion-scale, hybrid | Billions |
+| **Qdrant** | Rust-based, fast | Performance-critical, filtering | ~1B vectors |
+
+### Feature Store Architecture
+
+```
+Offline (training):
+  Raw data → Feature Engineering → Feature Store (offline)
+                                        ↓
+Online (inference):
+  Request → Feature Store (online, Redis) → Model → Response
+```
+
+**Consistency**: Online and offline features must match. If training uses "user_age_30d" but online serves "user_age_current", the model sees different distributions.
+
+### Model Registry
+
+```
+Model Registry:
+  model_id: "llama-2-70b-chat"
+  version: "v1.3"
+  weights: s3://models/llama-2-70b-chat/v1.3/weights.bin
+  config: s3://models/llama-2-70b-chat/v1.3/config.json
+  metrics: {faithfulness: 0.92, latency_p99: 450ms}
+  status: "production" | "staging" | "archived"
+```
+
+### LLM-Specific Caching
+
+| Cache Type | What It Caches | Hit Rate | Freshness |
+|---|---|---|---|
+| **Prefix cache** | KV cache for shared prompt prefix | High (shared system prompts) | Per session |
+| **Semantic cache** | Responses for similar queries | 20-30% | TTL-based |
+| **Exact cache** | Responses for identical queries | Low (rare exact repeats) | TTL-based |
+| **Embedding cache** | Computed embeddings | High (documents don't change often) | On document update |
+
+```python
+def cached_generate(query, cache, model):
+    # 1. Check exact cache
+    if query in cache:
+        return cache[query]
+    
+    # 2. Check semantic cache (embedding similarity)
+    query_emb = embed(query)
+    similar = cache.find_similar(query_emb, threshold=0.95)
+    if similar:
+        return similar.response
+    
+    # 3. Generate new response
+    response = model.generate(query)
+    
+    # 4. Cache it
+    cache.set(query, response, query_emb, ttl=3600)
+    return response
+```
+
+### ML Monitoring Stack
+
+```
+System Metrics:
+  GPU utilization, memory, temperature, ECC errors
+  Network bandwidth (critical for TP/PP)
+  Disk I/O (checkpoint loading, model weights)
+
+Model Metrics:
+  Inference latency (TTFT, TPOT)
+  Output quality (faithfulness, hallucination rate)
+  Request rate, batch size, queue depth
+
+Business Metrics:
+  User satisfaction (thumbs up/down)
+  Task completion rate
+  Cost per query
+  Revenue impact
+```
+
+### L5 Interview Q&A
+
+#### Q: "How do you choose between FAISS, Pinecone, and pgvector for a RAG system?"
+
+| Factor | FAISS | Pinecone | pgvector |
+|---|---|---|---|
+| Scale | <100M vectors | Billions | <10M vectors |
+| Latency | <1ms (in-memory) | ~10ms (network) | ~5ms (Postgres) |
+| Ops | DIY (you manage) | Managed (no-ops) | Easy (if you have Postgres) |
+| Cost | Free (self-hosted) | $$ (managed) | Free (if you have Postgres) |
+| Filtering | Limited | Rich metadata filtering | Full SQL filtering |
+| Best for | Prototype, low-latency | Production at scale | Small scale, SQL integration |
+
+**Decision**: Start with FAISS for prototyping → move to Pinecone/Milvus for production at scale → use pgvector if you already have Postgres and scale is small.
+
+#### Q: "Design a feature store for a real-time ML system."
+
+```
+Offline path (batch):
+  Data warehouse → Spark/Beam feature pipeline → Offline feature store (S3/BigQuery)
+  Used for: training data generation, batch scoring
+
+Online path (real-time):
+  User request → Online feature store (Redis/DynamoDB) → Model inference
+  Used for: real-time scoring (<10ms retrieval)
+
+Sync: Offline → Online sync pipeline (hourly or streaming)
+```
+
+**Key challenges**:
+1. **Online/offline consistency**: same feature definition, same transformations.
+2. **Freshness**: how quickly do new features appear online? (streaming vs batch)
+3. **Point-in-time correctness**: training must use features as they were at event time, not current values.
+
+#### Q: "How do you implement semantic caching for an LLM serving system?"
+
+```
+1. Compute embedding of incoming query
+2. Search cache for similar queries (cosine similarity > 0.95)
+3. If found: return cached response (with TTL check)
+4. If not: generate response, cache with embedding + TTL
+
+Cache structure:
+  Key: query embedding (1024-dim vector)
+  Value: response text + timestamp + metadata
+  Index: HNSW for fast similarity search
+  TTL: 1 hour (or invalidate on knowledge base update)
+
+Hit rate: typically 20-30% for production LLM systems
+Savings: 20-30% fewer inference calls → significant cost reduction
+```
+
+**Risks**:
+- **Stale answers**: cached response may be outdated. Mitigate with TTL.
+- **False positives**: semantically similar but functionally different queries. Mitigate with high threshold (0.95+).
+- **Cache invalidation**: when knowledge base updates, invalidate relevant cache entries.
+
+#### Q: "What infrastructure do you need to serve 10 different LLM models?"
+
+```
+Model fleet:
+  - 2x large models (70B): 8 GPUs each (TP=4, 2 replicas)
+  - 3x medium models (13B): 2 GPUs each (TP=1, 2 replicas each)
+  - 5x small models (8B): 1 GPU each (2 replicas each)
+
+Total GPUs: 16 + 12 + 10 = 38 GPUs
+
+Components:
+  - Model registry: track versions, weights, configs
+  - GPU scheduler: allocate GPUs to models, handle failures
+  - Load balancer: route to correct model + replica
+  - Health checker: GPU temperature, memory, inference latency
+  - Autoscaler: add/remove replicas based on load
+  - Monitoring: per-model metrics (QPS, latency, quality)
+  - Shared cache: prefix cache for common system prompts
+```
+
+#### Q: "How do you handle GPU OOM in production?"
+
+1. **Prevention**: 
+   - Set max batch size based on available memory.
+   - Set max context length per request.
+   - Monitor memory usage, alert at 80%.
+
+2. **Detection**:
+   - Catch OOM errors from inference engine.
+   - Log the request that caused OOM (prompt length, batch size).
+
+3. **Recovery**:
+   - Drop the offending request, return error to user.
+   - Reduce batch size temporarily.
+   - If persistent: restart the inference server (reload model).
+
+4. **Long-term**:
+   - Quantize model (FP16 → INT8 → INT4).
+   - Use GQA/MQA to reduce KV cache memory.
+   - Add more GPUs (increase TP or add replicas).
+   - Implement request admission control (reject very long prompts).

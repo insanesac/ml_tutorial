@@ -458,3 +458,316 @@ Test variations to find the best configuration:
 ```
 
 **Always end with tradeoffs.** Every choice has a cost. State it explicitly.
+
+---
+
+## 12. LLM Serving Architecture Deep Dive
+
+### GPU Capacity Planning
+
+```
+GPU Memory Budget = Model Weights + KV Cache + Activations + Overhead
+
+Example: LLaMA-2 70B on 8x A100 80GB
+  Weights (FP16):     140 GB → 17.5 GB/GPU (tensor parallelism)
+  KV Cache (batch=32, ctx=4096): ~32 GB → 4 GB/GPU
+  Activations:        ~8 GB → 1 GB/GPU
+  Overhead:           ~2 GB/GPU
+  Total per GPU:      ~24.5 GB (fits in 80 GB)
+```
+
+### Serving Stack Components
+
+```
+User Request
+    ↓
+API Gateway (auth, rate limiting, routing)
+    ↓
+Request Queue (Kafka/SQS for async, or in-memory for sync)
+    ↓
+Scheduler (continuous batching, priority, admission control)
+    ↓
+Inference Engine (vLLM, TGI, TensorRT-LLM)
+    ↓
+Model (tensor-parallel across GPUs)
+    ↓
+Response Stream (SSE/WebSocket for token streaming)
+    ↓
+User
+```
+
+### Key Serving Decisions
+
+| Decision | Options | Tradeoff |
+|---|---|---|
+| **Serving framework** | vLLM, TGI, TensorRT-LLM, Triton | Throughput vs flexibility vs vendor lock-in |
+| **Parallelism** | Tensor parallel (TP), Pipeline parallel (PP), Data parallel (DP) | TP: communication heavy; PP: bubble overhead; DP: simplest |
+| **Batching** | Static, dynamic, continuous | Static: simple but wasteful; Continuous: optimal GPU util |
+| **Quantization** | FP16, INT8, INT4 | Quality vs memory vs speed |
+| **Caching** | Prefix cache, semantic cache | Hit rate vs freshness |
+
+### Model Routing (Cascading)
+
+```
+User Query → Classifier → Simple? → Small Model (8B)
+                       → Medium? → Medium Model (70B)
+                       → Complex? → Large Model (GPT-4)
+```
+
+```python
+def route_request(query, classifier):
+    complexity = classifier.score(query)
+    if complexity < 0.3:
+        return small_model.generate(query)    # 8B, fast, cheap
+    elif complexity < 0.7:
+        return medium_model.generate(query)   # 70B, balanced
+    else:
+        return large_model.generate(query)    # GPT-4, slow, expensive
+```
+
+**Benefits**: 70-80% of queries are simple → route to small model → 10x cost savings with minimal quality loss.
+
+### Continuous Batching (L5 Critical)
+
+Traditional batching waits for all requests in a batch to finish → GPU idle time. Continuous batching:
+
+```
+Time:  t1    t2    t3    t4    t5
+Req A: [gen] [gen] [gen] [done]
+Req B:       [gen] [gen] [gen] [gen] [done]
+Req C:             [gen] [gen] [gen] [done]
+Req D:                   [gen] [gen] [gen] [done]
+
+GPU never idle — new requests join as old ones finish
+```
+
+This is what vLLM and TGI implement. It's the single biggest throughput improvement for LLM serving.
+
+### Streaming Architecture
+
+```
+Client ← SSE ← API ← Token Stream ← Inference Engine
+
+Token 1: "The" → sent immediately (~200ms TTFT)
+Token 2: "answer" → sent as generated (~20ms TPOT)
+Token 3: "is" → sent as generated
+...
+```
+
+**TTFT (Time To First Token)**: dominated by prefill (processing the prompt).
+**TPOT (Time Per Output Token)**: dominated by decode (one forward pass per token).
+
+### Multi-Model Serving
+
+```
+GPU 0-3: Model A (70B, TP=4)
+GPU 4-5: Model B (8B, TP=2)
+GPU 6-7: Model C (8B, TP=2) — for fallback/overflow
+```
+
+Considerations:
+- **Model placement**: which GPUs hold which models.
+- **Request routing**: send to the right model's GPU group.
+- **Hot-swapping**: load/unload models without downtime.
+- **Multi-LoRA**: one base model + multiple adapters (see LoRA notes).
+
+---
+
+## 13. RAG System Design (End-to-End)
+
+### Architecture
+
+```
+User Query
+    ↓
+Query Rewriter (LLM: HyDE, multi-query, step-back)
+    ↓
+Hybrid Retriever
+    ├── BM25 (Elasticsearch) → top 50
+    └── Dense (FAISS/HNSW)   → top 50
+    ↓
+Reciprocal Rank Fusion (RRF) → top 50 merged
+    ↓
+Cross-Encoder Reranker → top 5
+    ↓
+Context Builder (chunk selection, token budget management)
+    ↓
+LLM Generation (with citation instructions)
+    ↓
+Response + Citations → User
+```
+
+### Key Design Decisions
+
+| Component | Decision | Impact |
+|---|---|---|
+| **Embedding model** | bge-large-en (1024 dim) vs OpenAI ada (1536 dim) | Quality vs cost |
+| **Chunk size** | 512 tokens, 10% overlap | Precision vs context |
+| **Vector DB** | FAISS (in-memory) vs Pinecone (managed) vs pgvector (Postgres) | Latency vs ops vs integration |
+| **Reranker** | bge-reranker-large vs Cohere Rerank | Quality vs cost |
+| **Index update** | Real-time incremental vs nightly batch | Freshness vs complexity |
+
+### Indexing Pipeline
+
+```
+Documents → Parser (PDF/HTML/Markdown) → Semantic Chunker
+    ↓
+Embedding Model → Vectors
+    ↓
+Vector DB (HNSW index) + Metadata Store (Postgres)
+    ↓
+Incremental updates for new/modified documents
+Nightly full re-index for deletions
+```
+
+### Token Budget Management
+
+```
+Total context budget: 8192 tokens
+  System prompt:     500 tokens
+  Retrieved context: 5000 tokens (5 chunks × 1000 tokens)
+  Conversation:      1000 tokens
+  Response buffer:   1692 tokens
+
+If retrieved context exceeds budget → truncate or summarize
+```
+
+---
+
+## 14. Agent System Design
+
+### Architecture
+
+```
+User Goal
+    ↓
+Planner LLM: decompose goal into steps
+    ↓
+Step 1: Select tool → Execute → Observe result
+Step 2: Select tool → Execute → Observe result
+...
+Step N: Synthesize final answer
+    ↓
+Response → User
+```
+
+### Tool Selection
+
+```
+Available tools:
+  - search_web(query) → search results
+  - calculator(expression) → numeric result
+  - code_executor(code) → execution output
+  - database_query(sql) → query results
+
+Planner prompt: "Given the goal and available tools, which tool should I use next?"
+```
+
+### Key Challenges
+
+| Challenge | Solution |
+|---|---|
+| **Tool failure** | Retry with backoff, fallback to alternative tool |
+| **Infinite loops** | Max steps limit, cycle detection |
+| **Cost control** | Budget per request (max LLM calls, max tool calls) |
+| **Latency** | Parallel tool execution where possible |
+| **Evaluation** | Step-by-step correctness checking |
+
+### Multi-Agent Architecture
+
+```
+User → Orchestrator Agent
+         ├── Research Agent (search + summarize)
+         ├── Code Agent (write + execute code)
+         └── Critic Agent (verify outputs)
+```
+
+Each agent has its own system prompt, tools, and evaluation criteria. The orchestrator coordinates and synthesizes.
+
+---
+
+## 15. L5 Interview Q&A
+
+### Q: "Design an LLM serving system for 10M daily users."
+
+**Scale estimation:**
+- 10M users, ~5 queries/day = 50M queries/day
+- ~580 queries/second average, ~3000 QPS peak (5x)
+- Average response: 200 tokens, average prompt: 500 tokens
+
+**Architecture:**
+1. **API Gateway**: auth, rate limiting, request routing.
+2. **Model selection**: route by complexity — 80% to 8B model, 15% to 70B, 5% to GPT-4.
+3. **Serving**: vLLM with continuous batching, tensor parallelism (TP=4 for 70B, TP=1 for 8B).
+4. **GPU fleet**: 8B model on 4 GPU groups (1 GPU each), 70B on 4 GPU groups (4 GPUs each).
+5. **Caching**: prefix cache for shared system prompts, semantic cache for common queries.
+6. **Queue**: Kafka for async requests, in-memory for sync streaming.
+7. **Monitoring**: TTFT < 500ms, TPOT < 50ms, GPU utilization 60-80%.
+
+**Cost estimate:**
+- 80% queries on 8B: 40M queries × 700 tokens × $0.0001/1K tokens = $2,800/day
+- 15% on 70B: 7.5M × 700 × $0.001/1K = $5,250/day
+- 5% on GPT-4: 2.5M × 700 × $0.03/1K = $52,500/day
+- Total: ~$60K/day → routing to small models saves ~$50K/day vs all-GPT-4.
+
+### Q: "How would you reduce LLM serving costs by 10x?"
+
+1. **Model routing**: 80% of queries to small model → 10x cheaper for those.
+2. **Quantization**: INT4 for 70B → 4x less memory → more concurrent requests per GPU.
+3. **Caching**: semantic cache for common queries → 20-30% hit rate = 20-30% fewer inference calls.
+4. **Speculative decoding**: small model drafts, large model verifies → 2-3x throughput.
+5. **Batching**: continuous batching → 3-5x GPU utilization improvement.
+6. **Prompt compression**: reduce prompt length → less prefill compute.
+7. **Off-peak scaling**: autoscale down during low traffic.
+
+### Q: "How do you handle a traffic spike where QPS doubles suddenly?"
+
+1. **Autoscaling**: pre-provisioned GPU pools that spin up in 2-5 minutes.
+2. **Queue + backpressure**: buffer excess requests, degrade gracefully (shorter responses, smaller model).
+3. **Model fallback**: if 70B is overloaded, route to 8B with a warning.
+4. **Rate limiting**: throttle low-priority requests, prioritize paying users.
+5. **Circuit breakers**: stop sending traffic to overloaded GPU groups.
+6. **Pre-warming**: keep spare GPUs loaded with model weights (ready to serve).
+
+### Q: "Design a RAG system that stays fresh as documents are updated."
+
+1. **Incremental indexing**: new/modified documents → embed → add to vector DB in real-time.
+2. **Versioning**: each chunk has a version timestamp; retrieval prefers recent versions.
+3. **TTL on cached responses**: cached RAG answers expire after 1 hour (or on document update).
+4. **Webhook integration**: document management system sends update events → trigger re-index.
+5. **Nightly full re-index**: catch deletions and fix any incremental errors.
+6. **Stale detection**: if retrieved chunks are >30 days old, flag to user ("Information may be outdated").
+
+### Q: "How would you evaluate an LLM system in production?"
+
+**Offline:**
+- Benchmark suite: MMLU, GSM8K, HumanEval, domain-specific eval set.
+- RAGAS: faithfulness, answer relevance, context precision/recall.
+- Regression testing: ensure new model versions don't break existing capabilities.
+
+**Online:**
+- A/B testing: new model vs current model, measure user satisfaction.
+- Human eval: sample 100 responses/day, human raters score quality.
+- User feedback: thumbs up/down, detailed feedback forms.
+- Business metrics: task completion rate, retention, support ticket deflection.
+
+**Monitoring:**
+- Quality drift: track faithfulness, hallucination rate over time.
+- Safety: toxicity classifier, jailbreak detection, prompt injection attempts.
+- Performance: TTFT, TPOT, error rate, GPU utilization.
+
+---
+
+## Quick Reference: LLM Serving Cheat Sheet
+
+| Problem | Solution |
+|---|---|
+| High latency (TTFT) | Prefix caching, smaller model, prompt compression |
+| High latency (TPOT) | Speculative decoding, quantization, smaller model |
+| Low throughput | Continuous batching, tensor parallelism, larger batch |
+| High cost | Model routing, caching, quantization, smaller model |
+| OOM on GPU | Quantization, smaller batch, gradient checkpointing (training) |
+| Hallucinations | RAG grounding, faithfulness eval, confidence thresholds |
+| Stale knowledge | RAG with real-time indexing, webhook-triggered updates |
+| Traffic spikes | Autoscaling, queueing, model fallback, rate limiting |
+| Multi-tenant | Multi-LoRA serving, per-tenant adapters, isolated caches |

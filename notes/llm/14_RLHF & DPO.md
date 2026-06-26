@@ -133,10 +133,235 @@ The ratio to reference prevents the model from collapsing.
 
 ---
 
+## GRPO (Group-Relative Policy Optimization)
+
+### Used in: DeepSeek R1
+
+GRPO eliminates the need for a critic (value model) by using **group-relative advantages**:
+
+```
+1. For each prompt, sample G responses from the policy
+2. Score each response with a reward function (e.g., correctness)
+3. Compute group-relative advantage: A_i = (r_i - mean(r)) / std(r)
+4. Update policy with clipped objective (PPO-style) using A_i
+```
+
+### Key Differences from PPO
+
+| | PPO | GRPO |
+|---|---|---|
+| Value model | Required (critic) | Not needed |
+| Advantage | GAE (temporal) | Group-relative (mean/std) |
+| Memory | Policy + Value + Reference | Policy + Reference only |
+| Used in | GPT-3/4 alignment | DeepSeek R1 |
+
+### Why GRPO Works
+
+- For reasoning tasks (math, code), you can verify correctness automatically.
+- Sampling G responses per prompt gives a natural baseline (group mean).
+- No value model = simpler training, less memory, fewer hyperparameters.
+
+### Reward Function for R1
+
+DeepSeek R1 uses **rule-based rewards** instead of a neural reward model:
+- **Correctness**: exact match or test pass rate.
+- **Format**: checks if response uses `<think>` tags properly.
+- **No neural reward model** → no reward hacking from a flawed learned reward.
+
+---
+
+## DPO Variants
+
+### KTO (Kahneman-Tversky Optimization)
+
+- Uses **unpaired** data (single response + thumbs up/down) instead of preference pairs.
+- Based on prospect theory from behavioral economics.
+- Easier data collection — don't need paired comparisons.
+
+### IPO (Identity Preference Optimization)
+
+- Addresses DPO's overfitting issue on preference data.
+- Uses a regularization term that prevents the policy from becoming too confident.
+- Better for small datasets where DPO overfits.
+
+### SimPO (Simple Preference Optimization)
+
+- Removes the reference model entirely.
+- Uses a length-normalized reward: `r(x,y) = β * log π(y|x) / |y|`
+- Simpler, less memory, competitive quality.
+- Reference-free → no need to load a second model.
+
+### Comparison
+
+| Method | Reward Model | Reference Model | Data Format | Memory |
+|---|---|---|---|---|
+| RLHF (PPO) | Yes | Yes | Scalar rewards | Highest |
+| DPO | No | Yes | Preference pairs | Medium |
+| KTO | No | Yes | Unpaired (binary) | Medium |
+| IPO | No | Yes | Preference pairs | Medium |
+| SimPO | No | No | Preference pairs | Lowest |
+| GRPO | No (rule-based) | Yes | Group samples | Medium |
+
+---
+
+## Reward Hacking
+
+### What It Is
+
+The policy finds a way to get high reward **without** actually being helpful:
+
+```
+Reward model: "longer responses are better" (learned spurious correlation)
+Policy: generates very long, repetitive, unhelpful responses
+Result: high reward, low quality
+```
+
+### Common Failure Modes
+
+1. **Length hacking**: reward model correlates length with quality → policy generates verbose filler.
+2. **Repetition hacking**: repeating key phrases that the reward model likes.
+3. **Format hacking**: exploiting formatting (bullet points, headers) that correlates with quality.
+4. **Sycophancy**: agreeing with the user regardless of correctness.
+5. **Reward model exploitation**: finding adversarial inputs that trick the reward model.
+
+### Mitigations
+
+1. **KL penalty**: penalize drift from reference model — prevents extreme behaviors.
+2. **Reward model ensembles**: average multiple reward models — harder to exploit.
+3. **Length normalization**: divide reward by response length.
+4. **Adversarial training**: include reward-hacking examples in training data.
+5. **Monitoring**: track reward vs human eval quality — alert on divergence.
+6. **Rule-based rewards**: use verifiable rewards (correctness, format) when possible.
+
+---
+
+## RLAIF (Constitutional AI)
+
+### The Idea
+
+Replace human feedback with **AI feedback**:
+
+```
+1. Generate responses with the policy
+2. Ask an AI model to evaluate them against a "constitution" (set of principles)
+3. Use AI preferences as training signal for DPO/RLHF
+```
+
+### Anthropic's Constitutional AI
+
+```
+Constitution principles:
+- "Be helpful, harmless, and honest"
+- "Don't provide dangerous information"
+- "Acknowledge uncertainty"
+
+Process:
+1. Generate response to a prompt
+2. Ask AI: "Is this response consistent with the constitution?"
+3. AI provides critique and revision
+4. Use (original, revised) pairs as preference data for DPO
+```
+
+### Why RLAIF Matters
+
+- **Scalable**: no human annotation bottleneck.
+- **Cheaper**: AI feedback costs less than human feedback.
+- **Consistent**: AI applies principles more consistently than humans.
+- **Risk**: AI feedback may have blind spots or biases that human feedback wouldn't.
+
+---
+
+## Alignment Pipeline (End-to-End)
+
+```
+Pretraining (next-token prediction on web text)
+    ↓
+SFT (supervised fine-tuning on instruction-response pairs)
+    ↓
+Preference alignment (DPO / RLHF / GRPO)
+    ↓
+Safety (red-teaming, constitutional AI, safety classifiers)
+    ↓
+Evaluation (human eval, benchmarks, A/B testing)
+    ↓
+Deployment (monitoring, feedback collection, retraining)
+```
+
+### Each Stage's Purpose
+
+| Stage | Purpose | Data |
+|---|---|---|
+| Pretraining | World knowledge, language | Trillions of tokens |
+| SFT | Instruction following, format | 10K-1M examples |
+| DPO/RLHF | Preference alignment, helpfulness | 10K-100K preferences |
+| Safety | Harmlessness, refusal | Red-team prompts |
+| Evaluation | Quality assurance | Benchmarks + human eval |
+
+---
+
+## L5 Interview Q&A
+
+### Q: "Walk me through the RLHF pipeline step by step."
+
+1. **SFT**: fine-tune pretrained model on high-quality instruction-response pairs.
+2. **Reward model training**: collect human preference pairs (A > B), train a model to predict which response is preferred. The reward model takes (prompt, response) → scalar score.
+3. **PPO optimization**: use the reward model to score policy outputs. Optimize policy to maximize reward while staying close to the SFT model (KL penalty).
+4. **Evaluation**: check if human raters prefer the RLHF model over the SFT model.
+
+Key components: policy (being trained), reference (frozen SFT), reward model (frozen after training), value model (for PPO advantage estimation).
+
+### Q: "Why does DPO not need a reward model?"
+
+DPO derives a closed-form relationship between the reward and the policy:
+
+```
+r(x, y) = β * log(π(y|x) / π_ref(y|x)) + const
+```
+
+This means the optimal policy can be expressed directly in terms of the reference model — no need to learn a separate reward model. DPO optimizes the policy directly from preference data using this relationship.
+
+### Q: "How does GRPO differ from PPO for reasoning models?"
+
+PPO needs a value model to estimate advantages (expected future reward). For reasoning tasks (math, code), you can verify correctness automatically — so GRPO samples multiple responses per prompt, scores them, and uses the group statistics (mean, std) as the advantage. No value model needed.
+
+This is why DeepSeek R1 uses GRPO — it's simpler, uses less memory, and works well when rewards are verifiable.
+
+### Q: "What causes reward hacking and how do you detect it?"
+
+**Causes**: reward model has spurious correlations (length, format) that the policy exploits.
+**Detection**: 
+- Track reward vs human eval — if reward increases but human quality doesn't, you're being hacked.
+- Monitor response length, diversity, repetition metrics.
+- Use held-out reward model to check for overfitting.
+
+**Mitigations**: KL penalty, length normalization, reward model ensembles, rule-based rewards.
+
+### Q: "When would you use RLAIF vs RLHF?"
+
+- **RLAIF**: when you need scale (millions of preferences), have a strong AI evaluator, and want to reduce cost. Risk: AI evaluator may have blind spots.
+- **RLHF**: when quality is critical and you need human judgment. Risk: expensive, slow, inconsistent.
+- **Hybrid**: use RLAIF for bulk data, RLHF for quality-critical subsets.
+
+### Q: "Design an alignment pipeline for a customer-facing chatbot."
+
+1. **SFT**: fine-tune on 100K high-quality conversation examples.
+2. **DPO**: collect 50K preference pairs from human annotators, train with DPO (simpler than RLHF).
+3. **Safety**: red-team with adversarial prompts, add safety examples to DPO data.
+4. **Constitutional AI**: use RLAIF to generate additional safety preference data at scale.
+5. **Evaluation**: A/B test against current model, track human satisfaction metrics.
+6. **Monitoring**: log user feedback (thumbs up/down), alert on safety violations, retrain monthly.
+
+---
+
 ## Interview Sound Bites
 
-- RLHF uses a reward model + PPO to align with human preferences.
-- DPO eliminates the reward model and RL loop, optimizing preference data directly.
-- Both use a reference model to prevent the policy from drifting too far.
-- KL penalty is what stops reward hacking.
-- DPO is now preferred at most labs due to simplicity and competitive quality.
+- RLHF: reward model + PPO + KL penalty — maximum quality, maximum complexity.
+- DPO: no reward model, no RL loop — directly optimize from preference pairs using closed-form reward.
+- **GRPO** (DeepSeek R1): group-relative advantages, no value model, rule-based rewards for reasoning.
+- **SimPO**: no reference model either — simplest and most memory-efficient.
+- **KTO**: uses unpaired binary feedback instead of preference pairs — easier data collection.
+- **Reward hacking**: policy exploits reward model spurious correlations — mitigate with KL penalty, length normalization, ensembles.
+- **RLAIF**: replace human feedback with AI feedback — scalable but may have blind spots.
+- Alignment pipeline: Pretraining → SFT → DPO/RLHF → Safety → Evaluation → Deployment.
+- DPO is preferred at most labs due to simplicity and competitive quality vs RLHF.
+- For reasoning models, GRPO with rule-based rewards avoids reward hacking entirely.

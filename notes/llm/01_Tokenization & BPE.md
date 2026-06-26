@@ -122,19 +122,258 @@ Larger vocab = fewer tokens per sentence = shorter sequences = cheaper attention
 
 ---
 
+## WordPiece (Used in BERT)
+
+### How It Differs from BPE
+
+BPE merges the most **frequent** pair. WordPiece merges the pair that **maximizes the likelihood** of the training corpus.
+
+```
+Score(pair) = freq(pair) / (freq(first) * freq(second))
+```
+
+This favors pairs that are relatively more common compared to their individual parts.
+
+### Key Differences
+
+| | BPE | WordPiece |
+|---|---|---|
+| Merge criterion | Most frequent pair | Highest likelihood gain |
+| Direction | Bottom-up (merge) | Bottom-up (merge) |
+| Used in | GPT-2, GPT-4 | BERT, DistilBERT |
+| Unknown tokens | Rare (subword covers most) | Uses `[UNK]` for truly unknown |
+
+---
+
+## SentencePiece
+
+### What It Is
+
+A tokenizer-agnostic framework that treats text as a **raw byte stream** — no word boundaries assumed.
+
+- Works directly on raw text (no pre-tokenization by whitespace)
+- Supports both BPE and Unigram algorithms
+- Language-agnostic (handles CJK, Thai, etc. where there are no spaces)
+- Used in LLaMA, T5, XLNet
+
+### Why It Matters
+
+```
+English:  "Hello world"  ->  whitespace split is natural
+Chinese:  "你好世界"      ->  no spaces, need byte-level or char-level
+```
+
+SentencePiece sidesteps the whitespace assumption entirely.
+
+---
+
+## Unigram Language Model (Used in T5, ALBERT)
+
+### Core Idea
+
+Start with a **large** vocabulary of candidate subwords. Iteratively **remove** the subwords that least reduce the corpus likelihood.
+
+```
+1. Initialize with a large set of candidate subwords
+2. Compute likelihood of corpus under current vocabulary
+3. Remove the subword whose removal least decreases likelihood
+4. Repeat until target vocab size is reached
+```
+
+### BPE vs Unigram
+
+| | BPE | Unigram |
+|---|---|---|
+| Direction | Build up (merge) | Prune down (remove) |
+| Determinism | Deterministic (greedy merge) | Probabilistic (multiple valid segmentations) |
+| Used in | GPT family | T5, ALBERT |
+
+Unigram can produce multiple valid tokenizations for the same text, which can be useful for data augmentation.
+
+---
+
+## Byte-Level BPE (Used in GPT-2, GPT-4)
+
+### The Problem with Character-Level BPE
+
+Character-level BPE fails on non-ASCII characters, emojis, and multilingual text because the "characters" are Unicode codepoints.
+
+### The Solution
+
+Operate on **bytes** (256 possible values) instead of characters. Every text can be represented as bytes, so there are no unknown characters.
+
+```
+Text -> UTF-8 bytes -> BPE merges on byte sequences
+```
+
+### Why GPT-2 Uses It
+
+- No `[UNK]` token needed — every byte sequence can be tokenized
+- Works for any language, any emoji, any encoding
+- The vocabulary is built from 256 bytes + merges
+
+---
+
+## Encoding (Tokenizing New Text)
+
+Once BPE merge rules are learned, encoding new text:
+
+```python
+def bpe_encode(text, merges):
+    # Start with characters
+    tokens = list(text)
+    while True:
+        pairs = [(tokens[i], tokens[i+1]) for i in range(len(tokens)-1)]
+        # Find the pair with the lowest merge rank (earliest learned = highest priority)
+        mergeable = [(p, merges.index(p)) for p in pairs if p in merges]
+        if not mergeable:
+            break
+        best_pair = min(mergeable, key=lambda x: x[1])[0]
+        # Merge all occurrences
+        tokens = merge_in_text(tokens, best_pair)
+    return tokens
+```
+
+### Key Insight
+
+During encoding, you don't pick the most frequent pair — you pick the pair with the **lowest merge rank** (earliest learned merge). This ensures deterministic, consistent tokenization.
+
+---
+
+## Decoding (Tokens to Text)
+
+```python
+def bpe_decode(token_ids, id_to_token, merges):
+    tokens = [id_to_token[i] for i in token_ids]
+    return ''.join(tokens)  # For byte-level, decode bytes to UTF-8
+```
+
+For byte-level BPE (GPT-2/4), you concatenate the byte sequences and decode as UTF-8.
+
+---
+
+## Vocabulary Size
+
+| Model | Vocab Size | Tokenizer |
+|---|---|---|
+| GPT-2 | 50,257 | Byte-level BPE |
+| GPT-4 | ~100,000 | Byte-level BPE (tiktoken) |
+| LLaMA 3 | 128,000 | BPE (SentencePiece) |
+| BERT | 30,522 | WordPiece |
+| T5 | 32,128 | Unigram (SentencePiece) |
+
+Larger vocab = fewer tokens per sentence = shorter sequences = cheaper attention.
+
+But: larger vocab = bigger embedding matrix = more parameters = more memory.
+
+### Embedding Memory Math
+
+```
+Embedding params = vocab_size * D_model
+
+GPT-2:  50,257 * 768   = ~38.6M params
+LLaMA 3: 128,000 * 4096 = ~524M params (just embeddings!)
+```
+
+This is why vocab size is a significant design decision — it directly impacts model size.
+
+---
+
+## Tokenization Quirks (Interview Traps)
+
+- `"ChatGPT"` might tokenize as `["Chat", "G", "PT"]` — subword splits are not intuitive.
+- Numbers are often split digit by digit: `"1234"` -> `["1", "2", "3", "4"]`.
+- Whitespace is part of some tokens: `" hello"` ≠ `"hello"`.
+- Same word can tokenize differently depending on position/context.
+- Leading spaces matter: `"The cat"` vs `"cat"` produce different tokens.
+- Code tokenization is notoriously bad: indentation, brackets, operators split unpredictably.
+- Multi-byte characters (emojis, CJK) may take multiple tokens — costs more and loses semantic unit.
+- Tokenization is not reversible in general (information loss from pre-tokenization).
+
+---
+
+## Special Tokens
+
+| Token | Purpose |
+|---|---|
+| `<BOS>` | Beginning of sequence |
+| `<EOS>` | End of sequence |
+| `<PAD>` | Padding to fixed length |
+| `<UNK>` | Unknown token (rare in BPE/byte-level) |
+| `<|endoftext|>` | GPT-2/4 end of text |
+| `<|im_start|>` / `<|im_end|>` | ChatML message delimiters (GPT-4) |
+
+### Why Special Tokens Matter for L5
+
+- **Padding**: affects batching efficiency. Left vs right padding matters for generation.
+- **EOS detection**: serving systems need to detect EOS to stop generation and free resources.
+- **Chat formatting**: `<|im_start|>system\n...<|im_end|>` — token-level conversation structure.
+- **Fine-tuning**: custom special tokens for tool use, function calling, structured output.
+
+---
+
 ## Complexity
 
 | Operation | Complexity |
 |---|---|
 | BPE training | O(V * N) where V = merges, N = corpus size |
-| Tokenization (inference) | O(N) with precomputed merge rules |
+| Tokenization (inference) | O(N * M) where M = max merge rank depth |
+| Byte-level encoding | O(N) bytes -> BPE on byte sequence |
+
+---
+
+## L5 Interview Q&A
+
+### Q: "Walk me through how GPT-4 tokenizes 'Hello, world!'"
+
+1. Text is encoded to UTF-8 bytes.
+2. Bytes are mapped to a printable Unicode range (GPT-2's byte-to-unicode trick to avoid control characters).
+3. BPE merge rules are applied in rank order — earliest merges first.
+4. Each resulting token is looked up in the vocabulary to get its integer ID.
+5. The model receives a list of integer IDs.
+
+### Q: "Why does tokenization matter for model quality?"
+
+- **Multilingual fairness**: if a language needs 3x more tokens than English, it costs 3x more to process and the model has less effective context for it.
+- **Code generation**: poor tokenization of code (splitting `==`, `!=`, indentation) hurts code completion quality.
+- **Math**: digit-by-digit tokenization means the model can't do arithmetic on "multi-token numbers" as easily.
+- **Context window**: more tokens per word = less effective context = worse long-context performance.
+
+### Q: "How would you choose a vocabulary size for a new model?"
+
+Tradeoffs:
+- **Larger vocab**: shorter sequences, cheaper attention, better for multilingual, but bigger embedding matrix and output projection.
+- **Smaller vocab**: longer sequences, more attention cost, but fewer parameters in embeddings.
+- **Rule of thumb**: vocab should be large enough that common words are 1-2 tokens, rare words are 3-5 tokens.
+- **Multilingual**: need larger vocab to cover multiple scripts efficiently.
+
+### Q: "What's the difference between tiktoken and SentencePiece?"
+
+| | tiktoken | SentencePiece |
+|---|---|---|
+| Used by | GPT-4, GPT-3.5 | LLaMA, T5 |
+| Algorithm | Byte-level BPE | BPE or Unigram |
+| Whitespace | Part of tokens (Ġ prefix) | Raw byte stream, no pre-split |
+| Speed | Very fast (Rust) | Slower (C++) |
+| Language support | All (byte-level) | All (byte-level mode) |
+
+### Q: "Why is tokenization blamed for LLM weaknesses?"
+
+- **Spelling**: if a word is split into subwords, the model doesn't "see" the full word as a unit.
+- **Counting**: token-level position ≠ character-level position.
+- **Reversing strings**: if "hello" is one token, the model can't reverse it character by character without learning to do so internally.
+- **Math**: multi-digit numbers are split, making arithmetic harder.
+- **Prompt injection**: tokenizer quirks can create adversarial tokens that bypass filters.
 
 ---
 
 ## Interview Sound Bites
 
-- BPE balances vocabulary size with sequence length.
-- Starts with characters, merges most frequent pairs iteratively.
-- Handles rare words and morphology through subword sharing.
-- Larger vocabulary = shorter sequences = cheaper attention at inference.
-- Tokenization artifacts (split numbers, whitespace sensitivity) are a known weakness.
+- BPE balances vocabulary size with sequence length — starts with characters (or bytes), merges most frequent pairs iteratively.
+- Byte-level BPE (GPT-2/4) operates on raw bytes, eliminating `[UNK]` tokens and handling any language.
+- SentencePiece treats text as a raw byte stream — no whitespace pre-tokenization, making it language-agnostic.
+- WordPiece (BERT) merges by likelihood gain, not just frequency.
+- Unigram (T5) prunes from a large vocabulary down — probabilistic, multiple valid segmentations.
+- Larger vocabulary = shorter sequences = cheaper attention, but bigger embedding matrix.
+- Tokenization is the root cause of many LLM quirks: spelling, counting, reversing, math, multilingual fairness.
+- Encoding uses merge rank order (earliest merges first), not frequency — this ensures deterministic tokenization.
