@@ -57,18 +57,14 @@ algo/
 │       └── 08_rlhf.py               #  PPO, DPO, GRPO loss functions
 │
 ├── notes/
-│   ├── ml/                          # ML algorithm deep-dive notes
-│   │   ├── Volume 1 - Linear Regression & Gradient Descent.md
-│   │   ├── Volume 2 - Logistic Regression.md
-│   │   ├── Volume 3 - K-Means.md
-│   │   ├── Volume 4 - KNN.md
-│   │   ├── Linear Regression.md
-│   │   ├── Logistic Regression.md
-│   │   ├── K-Means.md
-│   │   ├── KNN.md
-│   │   └── Universal ML Interview Notes.md
+│   ├── 00_ml/                      # ML algorithm deep-dive notes
+│   │   ├── 00_universal_ml_notes.md #   Shape rules, complexity, oral drill checklist
+│   │   ├── 01_linear_regression.md  #   Linear regression & gradient descent
+│   │   ├── 02_logistic_regression.md#   Logistic regression, sigmoid, BCE
+│   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
+│   │   └── 04_knn.md               #   KNN, lazy learning, bias-variance via K
 │   │
-│   ├── llm/                         # LLM/Transformer interview notes (18 files)
+│   ├── 01_llm/                      # LLM/Transformer interview notes (18 files)
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
 │   │   ├── 01_Tokenization & BPE.md
 │   │   ├── 02_Cross Entropy.md
@@ -88,23 +84,23 @@ algo/
 │   │   ├── 16_LLM Evaluation Metrics.md
 │   │   └── 17_MoE (Mixture of Experts).md
 │   │
-│   ├── system_design/               # ML system design foundations
-│   │   ├── ML System Design Mental Framework.md
-│   │   ├── System Design Foundations - Session 1.md   # Requirements
-│   │   ├── System Design Foundations - Session 2.md   # Tradeoffs & cost of error
-│   │   ├── System Design Foundations - Session 3.md   # Scale estimation
-│   │   ├── System Design Foundations - Session 4.md   # Distributed systems
-│   │   └── System Design Foundations - Session 5.md   # Infrastructure components
+│   ├── 02_system_design/            # ML system design foundations
+│   │   ├── 00_system_design_framework.md  # 11-step mental framework
+│   │   ├── 01_requirements.md       #   Functional/NFR, ML-specific requirements
+│   │   ├── 02_tradeoffs.md          #   Quality/latency/cost, cost of error
+│   │   ├── 03_scale_estimation.md   #   GPU memory, serving capacity, storage
+│   │   ├── 04_distributed_systems.md#   Training consistency, replication, failure
+│   │   └── 05_infrastructure.md     #   GPU clusters, vector DBs, monitoring
 │   │
-│   ├── cheat_sheets/                # Interview pattern cheat sheets
-│   │   ├── Google ML Coding Interview Cheat Sheet (LLM Focused).md
-│   │   ├── Google ML Coding Interview Pattern Cheat Sheet.md
-│   │   └── The Pattern Detector.md
+│   ├── 03_cheat_sheets/             # Interview pattern cheat sheets
+│   │   ├── 00_llm_coding_cheatsheet.md  # LLM-focused coding cheat sheet
+│   │   ├── 01_pattern_cheatsheet.md     # ML coding interview patterns
+│   │   └── 02_pattern_detector.md       # Pattern recognition for interviews
 │   │
-│   └── reference/                   # Study guides & schedules
-│       ├── DATA_DESIGN.md           #   Dataset design philosophy
-│       ├── ML_Interview_Prep_Tracker.md  # Daily ritual tracker
-│       └── SCHEDULE.md              #   12-day prep schedule
+│   └── 04_reference/                # Study guides & schedules
+│       ├── 00_schedule.md           #   12-day intensive prep schedule
+│       ├── 01_prep_tracker.md       #   Daily ritual tracker & oral drill checklist
+│       └── 02_data_design.md        #   Dataset design philosophy
 │
 └── .venv/                           # Python virtual environment
 ```
@@ -137,11 +133,11 @@ pip install numpy torch scikit-learn
 
 ### If you're preparing for an ML/LLM interview
 
-1. **Read the notes first** — start with `notes/llm/00_LLM Transformer Interview Roadmap.md` for the full topic list, then work through `01`–`17` in order.
+1. **Read the notes first** — start with `notes/01_llm/00_LLM Transformer Interview Roadmap.md` for the full topic list, then work through `01`–`17` in order.
 2. **Implement from memory** — after reading a note, try to write the corresponding code file from scratch. Compare with the implementation in `code/`.
-3. **Oral drill** — use `notes/reference/ML_Interview_Prep_Tracker.md` for daily oral drill checklists. Explain each concept out loud as if in an interview.
-4. **System design** — read `notes/system_design/` sessions 1–5 in order, then practice with the mental framework.
-5. **Cheat sheets** — before the interview, skim `notes/cheat_sheets/` for pattern recognition.
+3. **Oral drill** — use `notes/04_reference/01_prep_tracker.md` for daily oral drill checklists. Explain each concept out loud as if in an interview.
+4. **System design** — read `notes/02_system_design/` sessions 0–5 in order, then practice with the mental framework.
+5. **Cheat sheets** — before the interview, skim `notes/03_cheat_sheets/` for pattern recognition.
 
 ### If you're learning ML/LLM fundamentals
 
@@ -155,8 +151,8 @@ pip install numpy torch scikit-learn
 - **Day 1–2**: Re-implement all `code/00_ml/` files from memory.
 - **Day 3–5**: Re-implement `code/01_llm_numpy/` files from memory.
 - **Day 6–7**: Walk through `code/02_llm_torch/` files, explain each line.
-- **Day 8–10**: Read all `notes/llm/` files, do oral drills.
-- **Day 11–12**: Practice system design using `notes/system_design/` framework.
+- **Day 8–10**: Read all `notes/01_llm/` files, do oral drills.
+- **Day 11–12**: Practice system design using `notes/02_system_design/` framework.
 
 ---
 
@@ -215,7 +211,17 @@ pip install numpy torch scikit-learn
 | `07_lora.py` | LoRA module | `LoRALinear` class, zero-init B, weight merging for inference |
 | `08_rlhf.py` | RLHF losses | PPO clip ratio, DPO Bradley-Terry, GRPO group normalization |
 
-### Notes — LLM (`notes/llm/`)
+### Notes — ML (`notes/00_ml/`)
+
+| # | File | Topic | Key Concepts |
+|---|------|-------|--------------|
+| 00 | `00_universal_ml_notes.md` | Universal ML notes | Shape rules, complexity rules, oral drill checklist |
+| 01 | `01_linear_regression.md` | Linear regression | MSE, gradient descent, chain rule intuition, learning rate |
+| 02 | `02_logistic_regression.md` | Logistic regression | Sigmoid, log-odds, BCE, (p − y) gradient |
+| 03 | `03_kmeans.md` | K-Means | WCSS, assignment vs update, elbow method, outlier sensitivity |
+| 04 | `04_knn.md` | KNN | Lazy learner, bias-variance via K, complexity |
+
+### Notes — LLM (`notes/01_llm/`)
 
 | # | Topic | L5 Interview Q&A |
 |---|-------|------------------|
@@ -238,22 +244,22 @@ pip install numpy torch scikit-learn
 | 16 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
 | 17 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
 
-### Notes — System Design (`notes/system_design/`)
+### Notes — System Design (`notes/02_system_design/`)
 
-| Session | Topic | L5 Interview Q&A |
-|---------|-------|------------------|
-| Framework | ML System Design Mental Framework | 11-step framework, LLM patterns |
-| 1 | Requirements | Functional/NFR, removal test, ML-specific requirements |
-| 2 | Tradeoffs | Quality/latency/cost/freshness, cost of error, metrics hierarchy |
-| 3 | Scale Estimation | GPU memory, LLM serving capacity, vector DB storage, training compute |
-| 4 | Distributed Systems | Training consistency, model replication, KV cache, rollouts, failure modes |
-| 5 | Infrastructure | GPU clusters, vector DBs, feature stores, model registry, caching, monitoring |
+| # | File | Topic | L5 Interview Q&A |
+|---|------|-------|------------------|
+| 00 | `00_system_design_framework.md` | Mental framework | 11-step framework, LLM patterns |
+| 01 | `01_requirements.md` | Requirements | Functional/NFR, removal test, ML-specific requirements |
+| 02 | `02_tradeoffs.md` | Tradeoffs | Quality/latency/cost/freshness, cost of error, metrics hierarchy |
+| 03 | `03_scale_estimation.md` | Scale estimation | GPU memory, LLM serving capacity, vector DB storage, training compute |
+| 04 | `04_distributed_systems.md` | Distributed systems | Training consistency, model replication, KV cache, rollouts, failure modes |
+| 05 | `05_infrastructure.md` | Infrastructure | GPU clusters, vector DBs, feature stores, model registry, caching, monitoring |
 
 ---
 
 ## Study Schedule
 
-A 12-day intensive plan is in `notes/reference/SCHEDULE.md`. The daily ritual:
+A 12-day intensive plan is in `notes/04_reference/00_schedule.md`. The daily ritual:
 
 1. **Re-implement** 2–3 core algorithms from memory (no looking at code).
 2. **Oral drill** — explain the algorithm out loud as if teaching someone.
@@ -270,7 +276,7 @@ All code files use tiny, deterministic datasets designed for interview settings:
 - **Small enough to debug by hand** — typically 4–9 data points.
 - **Easy to explain** — in an interview, you can write the dataset on a whiteboard.
 
-See `notes/reference/DATA_DESIGN.md` for the full philosophy.
+See `notes/04_reference/02_data_design.md` for the full philosophy.
 
 ---
 
