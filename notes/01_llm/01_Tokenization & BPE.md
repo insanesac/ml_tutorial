@@ -2,13 +2,13 @@
 
 ## What Is Tokenization?
 
-Converting raw text into token IDs that the model can process.
+Neural networks cannot process raw text. Transformers operate on numbers using operations such as `Q @ K.T`, `W @ x`, and `Softmax`. Text must first be converted into integer token IDs.
 
 ```
 "Hello world" -> [15496, 995]
 ```
 
-The model never sees characters or words directly — only integer IDs.
+These IDs are then mapped to embeddings. The model never sees characters or words directly — only integer IDs.
 
 ---
 
@@ -17,11 +17,23 @@ The model never sees characters or words directly — only integer IDs.
 - Very long sequences for any real text
 - O(N²) attention cost explodes
 
+**Cost example:**
+
+```
+1000 word tokens    → 1,000²  = 1 million attention operations
+7000 characters     → 7,000²  = 49 million attention operations
+```
+
+Sequence length grows dramatically, making training and inference much more expensive.
+
+- Weak semantic structure: tokenizer sees `p l a y i n g` and must learn from scratch that `play`, `playing`, `played`, `player` are related.
+
 ## Why Not Word-Level?
 
 - Huge vocabulary (millions of words)
 - Can't handle new words, typos, or rare words
 - No subword sharing ("run", "running", "runner" are completely separate)
+- OOV problem: `playfulness` → `<UNK>` — loses all useful information
 
 ---
 
@@ -128,6 +140,20 @@ Larger vocab = fewer tokens per sentence = shorter sequences = cheaper attention
 
 BPE merges the most **frequent** pair. WordPiece merges the pair that **maximizes the likelihood** of the training corpus.
 
+**What does "maximize likelihood" mean?**
+
+Likelihood measures how much probability the model assigns to the data that actually occurred. High likelihood means the tokenizer can represent the observed training corpus naturally and efficiently.
+
+```
+Corpus: playing, played, player, playful
+
+Vocabulary A: playing, played, player, playful  (4 large tokens)
+Vocabulary B: play, ing, ed, er, ful             (5 reusable subwords)
+
+Vocabulary B represents the corpus much more naturally.
+Therefore it gives the corpus a higher likelihood.
+```
+
 ```
 Score(pair) = freq(pair) / (freq(first) * freq(second))
 ```
@@ -151,10 +177,28 @@ This favors pairs that are relatively more common compared to their individual p
 
 A tokenizer-agnostic framework that treats text as a **raw byte stream** — no word boundaries assumed.
 
+Many languages do not separate words using spaces:
+
+```
+Chinese:   我喜欢机器学习
+Japanese:  私は機械学習が好きです
+```
+
+Traditional tokenizers assume words already exist. SentencePiece removes that assumption.
+
 - Works directly on raw text (no pre-tokenization by whitespace)
+- Spaces themselves become ordinary symbols (encoded as `▁`)
 - Supports both BPE and Unigram algorithms
 - Language-agnostic (handles CJK, Thai, etc. where there are no spaces)
 - Used in LLaMA, T5, XLNet
+
+```
+▁play  →  the leading ▁ represents whitespace
+
+If you've inspected LLaMA tokens, you've likely seen tokens such as:
+▁The  ▁cat  ▁ing
+The underscore-like symbol is simply an encoded space.
+```
 
 ### Why It Matters
 
@@ -377,3 +421,19 @@ Tradeoffs:
 - Larger vocabulary = shorter sequences = cheaper attention, but bigger embedding matrix.
 - Tokenization is the root cause of many LLM quirks: spelling, counting, reversing, math, multilingual fairness.
 - Encoding uses merge rank order (earliest merges first), not frequency — this ensures deterministic tokenization.
+
+---
+
+## Summary Comparison
+
+| Feature | Character | Word | Subword |
+|---|---|---|---|
+| Small vocabulary | ✅ | ❌ | ✅ |
+| Short sequences | ❌ | ✅ | ✅ |
+| Handles unknown words | ✅ | ❌ | ✅ |
+
+| Tokenizer | Main Idea | Typical Models |
+|---|---|---|
+| BPE | Merge most frequent adjacent pair | GPT-2 (byte-level BPE), RoBERTa |
+| WordPiece | Merge pair that maximizes corpus likelihood | BERT |
+| SentencePiece | Learn subwords directly from raw text without assuming words | LLaMA, T5, ALBERT |

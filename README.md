@@ -11,6 +11,7 @@ Every code file is self-contained, heavily commented, and runnable with minimal 
 
 ```
 algo/
+├── AI_ENGINEER_ROADMAP.md          # Master roadmap (15 modules, learning phases)
 ├── code/
 │   ├── 00_ml/                       # Core ML algorithms (NumPy only)
 │   │   ├── 00_linear_regression.py  #   Multi-feature linear regression (MSE + GD)
@@ -64,25 +65,26 @@ algo/
 │   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
 │   │   └── 04_knn.md               #   KNN, lazy learning, bias-variance via K
 │   │
-│   ├── 01_llm/                      # LLM/Transformer interview notes (18 files)
+│   ├── 01_llm/                      # LLM/Transformer interview notes (19 files)
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
 │   │   ├── 01_Tokenization & BPE.md
 │   │   ├── 02_Cross Entropy.md
 │   │   ├── 03_Cross Entropy From Logits.md
-│   │   ├── 04_Transformer Advanced Topics.md
-│   │   ├── 05_RoPE Implementation.md
-│   │   ├── 06_GQA & MQA.md
-│   │   ├── 07_FlashAttention Intuition.md
-│   │   ├── 08_Perplexity, LayerNorm & RMSNorm.md
-│   │   ├── 09_KV Cache & Decoding.md
-│   │   ├── 10_KV Cache Implementation.md
-│   │   ├── 11_RAG.md
-│   │   ├── 12_LoRA & Quantization.md
-│   │   ├── 13_LoRA Forward Pass.md
-│   │   ├── 14_RLHF & DPO.md
-│   │   ├── 15_Scaling Laws.md
-│   │   ├── 16_LLM Evaluation Metrics.md
-│   │   └── 17_MoE (Mixture of Experts).md
+│   │   ├── 04_Backpropagation.md     #   Chain rule, autograd, activation storage
+│   │   ├── 05_Transformer Advanced Topics.md
+│   │   ├── 06_RoPE Implementation.md
+│   │   ├── 07_GQA & MQA.md
+│   │   ├── 08_FlashAttention Intuition.md
+│   │   ├── 09_Perplexity, LayerNorm & RMSNorm.md
+│   │   ├── 10_KV Cache & Decoding.md
+│   │   ├── 11_KV Cache Implementation.md
+│   │   ├── 12_RAG.md
+│   │   ├── 13_LoRA & Quantization.md
+│   │   ├── 14_LoRA Forward Pass.md
+│   │   ├── 15_RLHF & DPO.md
+│   │   ├── 16_Scaling Laws.md
+│   │   ├── 17_LLM Evaluation Metrics.md
+│   │   └── 18_MoE (Mixture of Experts).md
 │   │
 │   ├── 02_system_design/            # ML system design foundations
 │   │   ├── 00_system_design_framework.md  # 11-step mental framework
@@ -133,7 +135,7 @@ pip install numpy torch scikit-learn
 
 ### If you're preparing for an ML/LLM interview
 
-1. **Read the notes first** — start with `notes/01_llm/00_LLM Transformer Interview Roadmap.md` for the full topic list, then work through `01`–`17` in order.
+1. **Read the notes first** — start with `AI_ENGINEER_ROADMAP.md` for the full 15-module roadmap, then `notes/01_llm/00_LLM Transformer Interview Roadmap.md` for LLM-specific topics, then work through `01`–`18` in order.
 2. **Implement from memory** — after reading a note, try to write the corresponding code file from scratch. Compare with the implementation in `code/`.
 3. **Oral drill** — use `notes/04_reference/01_prep_tracker.md` for daily oral drill checklists. Explain each concept out loud as if in an interview.
 4. **System design** — read `notes/02_system_design/` sessions 0–5 in order, then practice with the mental framework.
@@ -229,20 +231,21 @@ pip install numpy torch scikit-learn
 | 01 | Tokenization & BPE | WordPiece, SentencePiece, vocab size tradeoffs |
 | 02 | Cross Entropy | KL divergence, label smoothing, focal loss |
 | 03 | CE From Logits | Fused implementation, gradient computation, vocab-level CE |
-| 04 | Transformer Advanced | ALiBi, pre/post-norm, SwiGLU, sliding window, FlashAttention-2 |
-| 05 | RoPE Implementation | Math derivation, interleaved vs half-split, scaling methods |
-| 06 | GQA & MQA | KV cache math, quality benchmarks, when to use |
-| 07 | FlashAttention | Online softmax, tiling, FA-2/3 improvements |
-| 08 | Perplexity, LayerNorm & RMSNorm | Calibration, norm comparisons, gradient analysis |
-| 09 | KV Cache & Decoding | PagedAttention, speculative decoding, penalties |
-| 10 | KV Cache Implementation | Pre-allocation, multi-layer, GQA-aware, prefix caching |
-| 11 | RAG | Hybrid search, reranking, RAGAS, multi-turn, chunking |
-| 12 | LoRA & Quantization | QLoRA, rank selection, BF16 vs FP16, quantization methods |
-| 13 | LoRA Forward Pass | Initialization, gradient flow, multi-adapter serving |
-| 14 | RLHF & DPO | GRPO, KTO/IPO/SimPO, reward hacking, RLAIF |
-| 15 | Scaling Laws | Chinchilla, overtraining economics, compute-optimal |
-| 16 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
-| 17 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
+| 04 | Backpropagation | Chain rule, computational graph, activation storage, PyTorch autograd |
+| 05 | Transformer Advanced | ALiBi, pre/post-norm, SwiGLU, sliding window, FlashAttention-2 |
+| 06 | RoPE Implementation | Math derivation, interleaved vs half-split, scaling methods |
+| 07 | GQA & MQA | KV cache math, quality benchmarks, when to use |
+| 08 | FlashAttention | Online softmax, tiling, FA-2/3 improvements |
+| 09 | Perplexity, LayerNorm & RMSNorm | Calibration, norm comparisons, gradient analysis |
+| 10 | KV Cache & Decoding | PagedAttention, speculative decoding, penalties |
+| 11 | KV Cache Implementation | Pre-allocation, multi-layer, GQA-aware, prefix caching |
+| 12 | RAG | Hybrid search, reranking, RAGAS, multi-turn, chunking |
+| 13 | LoRA & Quantization | QLoRA, rank selection, BF16 vs FP16, quantization methods |
+| 14 | LoRA Forward Pass | Initialization, gradient flow, multi-adapter serving |
+| 15 | RLHF & DPO | GRPO, KTO/IPO/SimPO, reward hacking, RLAIF |
+| 16 | Scaling Laws | Chinchilla, overtraining economics, compute-optimal |
+| 17 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
+| 18 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
 
 ### Notes — System Design (`notes/02_system_design/`)
 
