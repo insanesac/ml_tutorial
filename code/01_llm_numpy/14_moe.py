@@ -18,7 +18,12 @@ Example with k=2:
 
 import numpy as np
 
-from softmax import softmax
+
+def softmax(x):
+    """Numerically stable softmax over the last axis."""
+    x = x - np.max(x, axis=-1, keepdims=True)
+    exp_x = np.exp(x)
+    return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
 
 
 def moe_forward(x, experts, W_router, k=2):

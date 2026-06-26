@@ -12,55 +12,49 @@ Every code file is self-contained, heavily commented, and runnable with minimal 
 ```
 algo/
 ├── code/
-│   ├── ml/                          # Core ML algorithms (NumPy only)
-│   │   ├── linear_regression.py     #   Multi-feature linear regression (MSE + GD)
-│   │   ├── logistic_regression.py   #   Logistic regression (BCE + GD)
-│   │   ├── knn.py                   #   K-Nearest Neighbors (lazy learner)
-│   │   ├── kmeans.py                #   K-Means clustering (Lloyd's algorithm)
-│   │   ├── softmax.py               #   Softmax regression (multiclass CE + GD)
-│   │   ├── cross_entropy.py         #   Cross-entropy loss demo (correct vs wrong)
-│   │   ├── neural_network.py        #   2-layer MLP forward pass (ReLU + Softmax)
-│   │   ├── backpropagation.py       #   2-layer MLP with full backprop training
-│   │   ├── relu.py                  #   ReLU vs Sigmoid (vanishing gradient, dead ReLU)
-│   │   ├── metrics.py               #   Accuracy, precision, recall, F1, ROC-AUC
-│   │   ├── bias_variance.py         #   Underfit / good-fit / overfit demo
-│   │   ├── regularization.py        #   L1/L2 regularization (Ridge closed-form)
-│   │   └── data_splits.py           #   Train/val/test split + data leakage
+│   ├── 00_ml/                       # Core ML algorithms (NumPy only)
+│   │   ├── 00_linear_regression.py  #   Multi-feature linear regression (MSE + GD)
+│   │   ├── 01_logistic_regression.py#   Logistic regression (BCE + GD)
+│   │   ├── 02_knn.py                #   K-Nearest Neighbors (lazy learner)
+│   │   ├── 03_kmeans.py             #   K-Means clustering (Lloyd's algorithm)
+│   │   ├── 04_softmax.py            #   Softmax regression (multiclass CE + GD)
+│   │   ├── 05_cross_entropy.py      #   Cross-entropy loss demo (correct vs wrong)
+│   │   ├── 06_neural_network.py     #   2-layer MLP forward pass (ReLU + Softmax)
+│   │   ├── 07_relu.py               #   ReLU vs Sigmoid (vanishing gradient, dead ReLU)
+│   │   ├── 08_backpropagation.py    #   2-layer MLP with full backprop training
+│   │   ├── 09_metrics.py            #   Accuracy, precision, recall, F1, ROC-AUC
+│   │   ├── 10_bias_variance.py      #   Underfit / good-fit / overfit demo
+│   │   ├── 11_regularization.py     #   L1/L2 regularization (Ridge closed-form)
+│   │   └── 12_data_splits.py        #   Train/val/test split + data leakage
 │   │
-│   ├── llm/
-│   │   ├── numpy/                   # LLM components in pure NumPy
-│   │   │   ├── softmax.py           #   Numerically stable softmax
-│   │   │   ├── attention.py         #   Scaled dot-product attention + causal mask
-│   │   │   ├── multihead_attention.py #  Multi-Head Attention (MHA)
-│   │   │   ├── mqa.py               #   Multi-Query Attention (MQA)
-│   │   │   ├── gqa.py               #   Grouped-Query Attention (GQA)
-│   │   │   ├── layer_norm.py        #   LayerNorm + RMSNorm
-│   │   │   ├── cross_entropy.py     #   CE from probabilities
-│   │   │   ├── cross_entropy_logits.py # CE from logits (log-sum-exp trick)
-│   │   │   ├── perplexity.py        #   Perplexity = exp(CE)
-│   │   │   ├── cosine_similarity.py #   Cosine similarity + retrieval
-│   │   │   ├── sampling.py          #   Temperature, top-k, top-p decoding
-│   │   │   ├── kv_cache.py          #   KV cache for autoregressive decoding
-│   │   │   ├── lora.py              #   LoRA low-rank adaptation
-│   │   │   ├── moe.py               #   Mixture of Experts forward pass
-│   │   │   ├── rope.py              #   Rotary Positional Embeddings
-│   │   │   └── transformer.py       #   Full GPT-style transformer (educational)
-│   │   │
-│   │   └── torch/                   # LLM components in PyTorch
-│   │       ├── transformer_block.py #  Transformer block (MHA + FFN + residuals)
-│   │       ├── gpt_model.py         #  GPT model with weight tying
-│   │       ├── gqa.py               #  GQA as nn.Module
-│   │       ├── mqa.py               #  MQA as nn.Module
-│   │       ├── rope.py              #  RoPE (functional implementation)
-│   │       ├── rope_module.py       #  RoPE as nn.Module (registered buffers)
-│   │       ├── rlhf.py              #  PPO, DPO, GRPO loss functions
-│   │       ├── kv_cache.py          #  KV cache as nn.Module
-│   │       └── lora.py              #  LoRALinear nn.Module + weight merging
+│   ├── 01_llm_numpy/                # LLM components in pure NumPy
+│   │   ├── 00_softmax.py            #   Numerically stable softmax
+│   │   ├── 01_attention.py          #   Scaled dot-product attention + causal mask
+│   │   ├── 02_multihead_attention.py#  Multi-Head Attention (MHA)
+│   │   ├── 03_mqa.py                #   Multi-Query Attention (MQA)
+│   │   ├── 04_gqa.py                #   Grouped-Query Attention (GQA)
+│   │   ├── 05_rope.py               #   Rotary Positional Embeddings
+│   │   ├── 06_layer_norm.py         #   LayerNorm + RMSNorm
+│   │   ├── 07_cross_entropy.py      #   CE from probabilities
+│   │   ├── 08_cross_entropy_logits.py#  CE from logits (log-sum-exp trick)
+│   │   ├── 09_perplexity.py         #   Perplexity = exp(CE)
+│   │   ├── 10_cosine_similarity.py  #   Cosine similarity + retrieval
+│   │   ├── 11_sampling.py           #   Temperature, top-k, top-p decoding
+│   │   ├── 12_kv_cache.py           #   KV cache for autoregressive decoding
+│   │   ├── 13_lora.py               #   LoRA low-rank adaptation
+│   │   ├── 14_moe.py                #   Mixture of Experts forward pass
+│   │   └── 15_transformer.py        #   Full GPT-style transformer (educational)
 │   │
-│   └── practice/                    # Coding practice (not interview-critical)
-│       ├── practice.py
-│       ├── trials.py
-│       └── test.py
+│   └── 02_llm_torch/                # LLM components in PyTorch
+│       ├── 00_transformer_block.py  #  Transformer block (MHA + FFN + residuals)
+│       ├── 01_gpt_model.py          #  GPT model with weight tying
+│       ├── 02_gqa.py                #  GQA as nn.Module
+│       ├── 03_mqa.py                #  MQA as nn.Module
+│       ├── 04_rope.py               #  RoPE (functional implementation)
+│       ├── 05_rope_module.py        #  RoPE as nn.Module (registered buffers)
+│       ├── 06_kv_cache.py           #  KV cache as nn.Module
+│       ├── 07_lora.py               #  LoRALinear nn.Module + weight merging
+│       └── 08_rlhf.py               #  PPO, DPO, GRPO loss functions
 │
 ├── notes/
 │   ├── ml/                          # ML algorithm deep-dive notes
@@ -120,9 +114,9 @@ algo/
 ## Code Organization Principles
 
 1. **One topic per file** — no mixed concerns. If a concept needs its own file, it gets one.
-2. **NumPy vs PyTorch split** — `code/llm/numpy/` for educational implementations (no framework magic), `code/llm/torch/` for production-style `nn.Module` code.
+2. **NumPy vs PyTorch split** — `code/01_llm_numpy/` for educational implementations (no framework magic), `code/02_llm_torch/` for production-style `nn.Module` code.
 3. **Heavily commented** — every file has a module docstring, function docstrings, shape annotations, and inline `# why` comments explaining the reasoning, not just the mechanics.
-4. **Runnable** — every file can be executed standalone (`python file.py`) with minimal dependencies.
+4. **Runnable** — every file can be executed standalone (`python file.py`) with minimal dependencies. Files are self-contained (no cross-file imports).
 5. **No new functionality** — code logic matches original implementations; comments and structure are the improvements.
 
 ---
@@ -133,9 +127,9 @@ algo/
 pip install numpy torch scikit-learn
 ```
 
-- `code/ml/` — requires only `numpy` (and `scikit-learn` for ROC-AUC in `metrics.py`)
-- `code/llm/numpy/` — requires only `numpy`
-- `code/llm/torch/` — requires `torch`
+- `code/00_ml/` — requires only `numpy` (and `scikit-learn` for ROC-AUC in `09_metrics.py`)
+- `code/01_llm_numpy/` — requires only `numpy`
+- `code/02_llm_torch/` — requires `torch`
 
 ---
 
@@ -151,16 +145,16 @@ pip install numpy torch scikit-learn
 
 ### If you're learning ML/LLM fundamentals
 
-1. Start with `code/ml/` — these are the building blocks. Each file is self-contained and demonstrates one concept with a tiny, deterministic dataset.
-2. Move to `code/llm/numpy/` — see how Transformer components work without framework abstractions.
-3. Then `code/llm/torch/` — see the same concepts as `nn.Module` classes, closer to real-world usage.
+1. Start with `code/00_ml/` — these are the building blocks. Each file is self-contained and demonstrates one concept with a tiny, deterministic dataset.
+2. Move to `code/01_llm_numpy/` — see how Transformer components work without framework abstractions.
+3. Then `code/02_llm_torch/` — see the same concepts as `nn.Module` classes, closer to real-world usage.
 4. Read the corresponding `notes/` file for deeper theory, derivations, and interview Q&A.
 
 ### If you're reviewing before an interview
 
-- **Day 1–2**: Re-implement all `code/ml/` files from memory.
-- **Day 3–5**: Re-implement `code/llm/numpy/` files from memory.
-- **Day 6–7**: Walk through `code/llm/torch/` files, explain each line.
+- **Day 1–2**: Re-implement all `code/00_ml/` files from memory.
+- **Day 3–5**: Re-implement `code/01_llm_numpy/` files from memory.
+- **Day 6–7**: Walk through `code/02_llm_torch/` files, explain each line.
 - **Day 8–10**: Read all `notes/llm/` files, do oral drills.
 - **Day 11–12**: Practice system design using `notes/system_design/` framework.
 
@@ -168,58 +162,58 @@ pip install numpy torch scikit-learn
 
 ## Topic Coverage
 
-### ML Algorithms (`code/ml/`)
+### ML Algorithms (`code/00_ml/`)
 
 | File | Topic | Key Concepts |
 |------|-------|--------------|
-| `linear_regression.py` | Linear regression | MSE loss, gradient descent, closed-form vs iterative |
-| `logistic_regression.py` | Logistic regression | Sigmoid, BCE loss, (p − y) gradient |
-| `knn.py` | K-Nearest Neighbors | Euclidean distance, majority vote, lazy learning |
-| `kmeans.py` | K-Means clustering | Lloyd's algorithm, assignment + update, convergence |
-| `softmax.py` | Softmax regression | Multiclass CE, (p − y_onehot) gradient, stable softmax |
-| `cross_entropy.py` | Cross-entropy loss | CE formula, confidently-wrong penalty, log(0) prevention |
-| `neural_network.py` | Neural network forward pass | MLP, ReLU, softmax, shape flow |
-| `backpropagation.py` | Backpropagation | Chain rule, gradient flow, ReLU gradient |
-| `relu.py` | ReLU activation | Vanishing gradient, dead ReLU, ReLU vs sigmoid |
-| `metrics.py` | Classification metrics | Confusion matrix, precision/recall/F1, ROC-AUC |
-| `bias_variance.py` | Bias-variance tradeoff | Underfitting, good fit, overfitting |
-| `regularization.py` | L1/L2 regularization | Ridge closed-form, Lasso sparsity, weight explosion |
-| `data_splits.py` | Train/val/test splits | Data leakage, split ratios, reproducibility |
+| `00_linear_regression.py` | Linear regression | MSE loss, gradient descent, closed-form vs iterative |
+| `01_logistic_regression.py` | Logistic regression | Sigmoid, BCE loss, (p − y) gradient |
+| `02_knn.py` | K-Nearest Neighbors | Euclidean distance, majority vote, lazy learning |
+| `03_kmeans.py` | K-Means clustering | Lloyd's algorithm, assignment + update, convergence |
+| `04_softmax.py` | Softmax regression | Multiclass CE, (p − y_onehot) gradient, stable softmax |
+| `05_cross_entropy.py` | Cross-entropy loss | CE formula, confidently-wrong penalty, log(0) prevention |
+| `06_neural_network.py` | Neural network forward pass | MLP, ReLU, softmax, shape flow |
+| `07_relu.py` | ReLU activation | Vanishing gradient, dead ReLU, ReLU vs sigmoid |
+| `08_backpropagation.py` | Backpropagation | Chain rule, gradient flow, ReLU gradient |
+| `09_metrics.py` | Classification metrics | Confusion matrix, precision/recall/F1, ROC-AUC |
+| `10_bias_variance.py` | Bias-variance tradeoff | Underfitting, good fit, overfitting |
+| `11_regularization.py` | L1/L2 regularization | Ridge closed-form, Lasso sparsity, weight explosion |
+| `12_data_splits.py` | Train/val/test splits | Data leakage, split ratios, reproducibility |
 
-### LLM Components — NumPy (`code/llm/numpy/`)
-
-| File | Topic | Key Concepts |
-|------|-------|--------------|
-| `softmax.py` | Softmax | Numerical stability, max-shift trick |
-| `attention.py` | Scaled dot-product attention | Causal masking, sqrt(d_k) scaling |
-| `multihead_attention.py` | Multi-Head Attention | Head splitting, reshape/transpose, output projection |
-| `mqa.py` | Multi-Query Attention | Single KV head, KV cache reduction |
-| `gqa.py` | Grouped-Query Attention | KV head groups, memory vs quality tradeoff |
-| `layer_norm.py` | LayerNorm & RMSNorm | Per-token normalization, why not BatchNorm |
-| `cross_entropy.py` | Cross-entropy from probs | Sparse labels, clipping, CE formula |
-| `cross_entropy_logits.py` | CE from logits | Log-sum-exp trick, numerical stability |
-| `perplexity.py` | Perplexity | PPL = exp(CE), interpretation |
-| `cosine_similarity.py` | Cosine similarity & retrieval | Dot product of normalized vectors, top-k retrieval |
-| `sampling.py` | Decoding strategies | Temperature, top-k, top-p (nucleus) sampling |
-| `kv_cache.py` | KV cache | O(N²) → O(N) decoding, cache append |
-| `lora.py` | LoRA | Low-rank adaptation, parameter reduction, A/B matrices |
-| `moe.py` | Mixture of Experts | Router, top-k selection, weighted expert combination |
-| `rope.py` | Rotary Positional Embeddings | Rotation matrix, inv_freq, relative position encoding |
-| `transformer.py` | Full transformer | Embedding → blocks → vocab projection, architecture overview |
-
-### LLM Components — PyTorch (`code/llm/torch/`)
+### LLM Components — NumPy (`code/01_llm_numpy/`)
 
 | File | Topic | Key Concepts |
 |------|-------|--------------|
-| `transformer_block.py` | Transformer block | MHA + FFN + residuals + LayerNorm as `nn.Module` |
-| `gpt_model.py` | GPT model | Token/positional embedding, weight tying, stacked blocks |
-| `gqa.py` | GQA module | `repeat_interleave`, causal mask, KV head grouping |
-| `mqa.py` | MQA module | Single KV head expansion via `expand` |
-| `rope.py` | RoPE (functional) | `torch.outer`, precomputed cos/sin, apply to Q and K |
-| `rope_module.py` | RoPE (nn.Module) | Registered buffers, device-aware, state_dict serialization |
-| `rlhf.py` | RLHF losses | PPO clip ratio, DPO Bradley-Terry, GRPO group normalization |
-| `kv_cache.py` | KV cache module | `torch.cat` append, reset, `nn.Module` wrapper |
-| `lora.py` | LoRA module | `LoRALinear` class, zero-init B, weight merging for inference |
+| `00_softmax.py` | Softmax | Numerical stability, max-shift trick |
+| `01_attention.py` | Scaled dot-product attention | Causal masking, sqrt(d_k) scaling |
+| `02_multihead_attention.py` | Multi-Head Attention | Head splitting, reshape/transpose, output projection |
+| `03_mqa.py` | Multi-Query Attention | Single KV head, KV cache reduction |
+| `04_gqa.py` | Grouped-Query Attention | KV head groups, memory vs quality tradeoff |
+| `05_rope.py` | Rotary Positional Embeddings | Rotation matrix, inv_freq, relative position encoding |
+| `06_layer_norm.py` | LayerNorm & RMSNorm | Per-token normalization, why not BatchNorm |
+| `07_cross_entropy.py` | Cross-entropy from probs | Sparse labels, clipping, CE formula |
+| `08_cross_entropy_logits.py` | CE from logits | Log-sum-exp trick, numerical stability |
+| `09_perplexity.py` | Perplexity | PPL = exp(CE), interpretation |
+| `10_cosine_similarity.py` | Cosine similarity & retrieval | Dot product of normalized vectors, top-k retrieval |
+| `11_sampling.py` | Decoding strategies | Temperature, top-k, top-p (nucleus) sampling |
+| `12_kv_cache.py` | KV cache | O(N²) → O(N) decoding, cache append |
+| `13_lora.py` | LoRA | Low-rank adaptation, parameter reduction, A/B matrices |
+| `14_moe.py` | Mixture of Experts | Router, top-k selection, weighted expert combination |
+| `15_transformer.py` | Full transformer | Embedding → blocks → vocab projection, architecture overview |
+
+### LLM Components — PyTorch (`code/02_llm_torch/`)
+
+| File | Topic | Key Concepts |
+|------|-------|--------------|
+| `00_transformer_block.py` | Transformer block | MHA + FFN + residuals + LayerNorm as `nn.Module` |
+| `01_gpt_model.py` | GPT model | Token/positional embedding, weight tying, stacked blocks |
+| `02_gqa.py` | GQA module | `repeat_interleave`, causal mask, KV head grouping |
+| `03_mqa.py` | MQA module | Single KV head expansion via `expand` |
+| `04_rope.py` | RoPE (functional) | `torch.outer`, precomputed cos/sin, apply to Q and K |
+| `05_rope_module.py` | RoPE (nn.Module) | Registered buffers, device-aware, state_dict serialization |
+| `06_kv_cache.py` | KV cache module | `torch.cat` append, reset, `nn.Module` wrapper |
+| `07_lora.py` | LoRA module | `LoRALinear` class, zero-init B, weight merging for inference |
+| `08_rlhf.py` | RLHF losses | PPO clip ratio, DPO Bradley-Terry, GRPO group normalization |
 
 ### Notes — LLM (`notes/llm/`)
 
@@ -284,16 +278,16 @@ See `notes/reference/DATA_DESIGN.md` for the full philosophy.
 
 ```bash
 # ML algorithms (numpy only)
-python code/ml/linear_regression.py
-python code/ml/backpropagation.py
+python code/00_ml/00_linear_regression.py
+python code/00_ml/08_backpropagation.py
 
 # LLM NumPy implementations
-python code/llm/numpy/attention.py
-python code/llm/numpy/transformer.py
+python code/01_llm_numpy/01_attention.py
+python code/01_llm_numpy/15_transformer.py
 
 # LLM PyTorch implementations
-python code/llm/torch/gqa.py
-python code/llm/torch/rlhf.py
+python code/02_llm_torch/02_gqa.py
+python code/02_llm_torch/08_rlhf.py
 ```
 
 Each file prints its output and expected results.

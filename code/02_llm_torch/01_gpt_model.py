@@ -13,10 +13,13 @@ Weight tying:
     This reduces parameters and ensures input/output share the same semantic space.
 """
 
+import importlib
 import torch
 import torch.nn as nn
 
-from transformer_block import TransformerBlock
+# Import from numbered filename (can't use normal import with numeric prefix).
+_transformer_block = importlib.import_module("00_transformer_block")
+TransformerBlock = _transformer_block.TransformerBlock
 
 
 class GPT(nn.Module):

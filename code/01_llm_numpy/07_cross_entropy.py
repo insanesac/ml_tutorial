@@ -71,8 +71,10 @@ if __name__ == "__main__":
     y_true = np.array([0, 0, 1, 1, 2, 2])
 
     # Convert logits to probabilities via softmax.
-    from softmax import softmax
-    probs = softmax(logits)
+    def _softmax(z):
+        e = np.exp(z - np.max(z, axis=1, keepdims=True))
+        return e / np.sum(e, axis=1, keepdims=True)
+    probs = _softmax(logits)
 
     print(f"Cross-entropy (sparse): {cross_entropy_sparse(probs, y_true):.4f}")
 
@@ -83,5 +85,5 @@ if __name__ == "__main__":
     ])
     y_wrong = np.array([0, 1])
 
-    probs_wrong = softmax(logits_wrong)
+    probs_wrong = _softmax(logits_wrong)
     print(f"Confidently wrong loss: {cross_entropy_sparse(probs_wrong, y_wrong):.4f}")

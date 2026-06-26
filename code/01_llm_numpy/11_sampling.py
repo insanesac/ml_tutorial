@@ -11,7 +11,12 @@ Greedy decoding (not shown here) simply picks argmax — no randomness, no diver
 
 import numpy as np
 
-from softmax import softmax
+
+def softmax(x):
+    """Numerically stable softmax over the last axis."""
+    x = x - np.max(x, axis=-1, keepdims=True)
+    exp_x = np.exp(x)
+    return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
 
 
 def temperature_sampling(logits, T):
