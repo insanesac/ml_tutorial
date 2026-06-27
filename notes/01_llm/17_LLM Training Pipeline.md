@@ -1,16 +1,104 @@
-# RLHF & DPO (Alignment)
+# LLM Training Pipeline: From Pretraining to GRPO
 
-## Why Alignment Exists
+## The Big Picture
 
-A pretrained LLM is trained to predict the next token.
+Modern LLM training is not a collection of unrelated algorithms. Each stage solves a limitation of the previous stage:
 
-That does not mean it is helpful, harmless, or honest.
-
-Alignment techniques fine-tune the model to follow instructions and match human preferences.
+```
+Raw Internet
+    ↓
+Pretraining (Next Token Prediction)
+    ↓
+General Language Model
+    ↓
+Supervised Fine-Tuning (SFT)
+    ↓
+Instruction Following Assistant
+    ↓
+Preference Alignment (RLHF / PPO)
+    ↓
+DPO (Removes Reward Model)
+    ↓
+GRPO (Removes Critic)
+```
 
 ---
 
-## RLHF (Reinforcement Learning from Human Feedback)
+## Stage 1: Pretraining
+
+### Goal
+
+Teach the model the structure of language. The model learns grammar, syntax, semantics, reasoning patterns, factual knowledge, code, and world knowledge.
+
+The objective is simply: **predict the next token.**
+
+```
+Input:  "The capital of France is"
+Target: "Paris"
+```
+
+Training pipeline:
+```
+Input → Transformer → Logits → Softmax → Cross Entropy → Backpropagation → Adam
+```
+
+### Result
+
+A model that is very good at continuing text.
+
+### Problem After Pretraining
+
+The model understands language, but it does not understand instructions. A pretrained language model may continue text like an internet forum — it has never been explicitly taught to behave like an assistant.
+
+---
+
+## Stage 2: Supervised Fine-Tuning (SFT)
+
+### Goal
+
+Teach the model to follow instructions. Instead of internet text, the dataset becomes:
+
+```
+Instruction → High-quality Answer
+```
+
+### Teacher Forcing
+
+During training, we always feed the **correct** previous tokens:
+
+```
+Input:  "I"              → Target: "love"
+Input:  "I love"         → Target: "machine"
+```
+
+Even if the model predicted "I hate", we still feed "I love". This stabilizes training.
+
+### Exposure Bias
+
+During inference, there is no teacher. The model must consume its own predictions:
+
+```
+Training:  Correct Prefix → Correct Prefix → Correct Prefix
+Inference:  Prediction    → Prediction    → Prediction
+```
+
+One mistake can change the entire future context. This is called **exposure bias**.
+
+### Training Objective
+
+Nothing changes mathematically. Still Cross Entropy → Backpropagation → Adam. The only thing that changes is the dataset.
+
+### Result
+
+The language model becomes an instruction-following assistant.
+
+### Problem After SFT
+
+Suppose the prompt is "Write me a joke." There is not one correct answer — there may be Joke A, Joke B, Joke C. All are valid. Some are simply preferred by humans. Cross entropy cannot express "A is better than B." It only knows "this token is correct." We need preference learning.
+
+---
+
+## Stage 3: RLHF (Reinforcement Learning from Human Feedback)
 
 ### Pipeline
 
@@ -63,10 +151,21 @@ Objective = R(response) - β * KL(policy || SFT)
 - Reward hacking: model learns to fool the reward model
 - PPO is unstable and complex to tune
 - Reward model can have its own biases
+- Requires **three** separate learned components: Policy Model, Reward Model, Critic
 
 ---
 
-## DPO (Direct Preference Optimization)
+## Stage 4: DPO (Direct Preference Optimization)
+
+### Why DPO?
+
+PPO still requires three separate learned components (Policy, Reward Model, Critic). Researchers asked: why train a reward model? Humans already provide preference data.
+
+```
+Prompt → Chosen Response ✅ / Rejected Response ❌
+```
+
+Instead of learning a reward function, optimize directly using `Chosen > Rejected`. No reward model required.
 
 ### Core Insight
 
@@ -133,7 +232,13 @@ The ratio to reference prevents the model from collapsing.
 
 ---
 
-## GRPO (Group-Relative Policy Optimization)
+## Stage 5: GRPO (Group-Relative Policy Optimization)
+
+### Why GRPO?
+
+DPO still requires a Critic to estimate advantages. GRPO removes the critic entirely.
+
+Generate multiple responses per prompt. Instead of training a critic, compute the **average reward** of the group. Advantages become `Reward − Group Average`. The group itself provides the baseline.
 
 ### Used in: DeepSeek R1
 

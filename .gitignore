@@ -12,6 +12,9 @@ venv/
 # Local practice folder (not for remote)
 code/practice/
 
+# Local-only progress tracker
+PROGRESS.md
+
 # IDE
 .vscode/
 .idea/

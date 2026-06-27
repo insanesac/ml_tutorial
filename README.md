@@ -63,28 +63,31 @@ algo/
 │   │   ├── 01_linear_regression.md  #   Linear regression & gradient descent
 │   │   ├── 02_logistic_regression.md#   Logistic regression, sigmoid, BCE
 │   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
-│   │   └── 04_knn.md               #   KNN, lazy learning, bias-variance via K
+│   │   ├── 04_knn.md               #   KNN, lazy learning, bias-variance via K
+│   │   └── 05_optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
 │   │
-│   ├── 01_llm/                      # LLM/Transformer interview notes (19 files)
+│   ├── 01_llm/                      # LLM/Transformer interview notes (21 files)
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
 │   │   ├── 01_Tokenization & BPE.md
-│   │   ├── 02_Cross Entropy.md
-│   │   ├── 03_Cross Entropy From Logits.md
-│   │   ├── 04_Backpropagation.md     #   Chain rule, autograd, activation storage
-│   │   ├── 05_Transformer Advanced Topics.md
-│   │   ├── 06_RoPE Implementation.md
-│   │   ├── 07_GQA & MQA.md
-│   │   ├── 08_FlashAttention Intuition.md
-│   │   ├── 09_Perplexity, LayerNorm & RMSNorm.md
-│   │   ├── 10_KV Cache & Decoding.md
-│   │   ├── 11_KV Cache Implementation.md
-│   │   ├── 12_RAG.md
-│   │   ├── 13_LoRA & Quantization.md
-│   │   ├── 14_LoRA Forward Pass.md
-│   │   ├── 15_RLHF & DPO.md
-│   │   ├── 16_Scaling Laws.md
-│   │   ├── 17_LLM Evaluation Metrics.md
-│   │   └── 18_MoE (Mixture of Experts).md
+│   │   ├── 02_Embeddings.md
+│   │   ├── 03_Transformer Family.md
+│   │   ├── 04_Backpropagation.md
+│   │   ├── 05_Cross Entropy.md
+│   │   ├── 06_Cross Entropy From Logits.md
+│   │   ├── 07_Transformer Advanced Topics.md
+│   │   ├── 08_RoPE Implementation.md
+│   │   ├── 09_GQA & MQA.md
+│   │   ├── 10_FlashAttention Intuition.md
+│   │   ├── 11_Perplexity, LayerNorm & RMSNorm.md
+│   │   ├── 12_KV Cache & Decoding.md
+│   │   ├── 13_KV Cache Implementation.md
+│   │   ├── 14_RAG.md
+│   │   ├── 15_LoRA & Quantization.md
+│   │   ├── 16_LoRA Forward Pass.md
+│   │   ├── 17_LLM Training Pipeline.md
+│   │   ├── 18_Scaling Laws.md
+│   │   ├── 19_LLM Evaluation Metrics.md
+│   │   └── 20_MoE (Mixture of Experts).md
 │   │
 │   ├── 02_system_design/            # ML system design foundations
 │   │   ├── 00_system_design_framework.md  # 11-step mental framework
@@ -94,15 +97,28 @@ algo/
 │   │   ├── 04_distributed_systems.md#   Training consistency, replication, failure
 │   │   └── 05_infrastructure.md     #   GPU clusters, vector DBs, monitoring
 │   │
-│   ├── 03_cheat_sheets/             # Interview pattern cheat sheets
-│   │   ├── 00_llm_coding_cheatsheet.md  # LLM-focused coding cheat sheet
-│   │   ├── 01_pattern_cheatsheet.md     # ML coding interview patterns
-│   │   └── 02_pattern_detector.md       # Pattern recognition for interviews
+│   ├── 03_cheat_sheets/             # Quick-reference lookup cards (not learning material)
+│   │   ├── complexity_table.md         #   One-page complexity lookup
+│   │   ├── pattern_keywords.md         #   Keyword → pattern map
+│   │   └── ml_coding_checklist.md      #   Last-minute interview checklist
 │   │
-│   └── 04_reference/                # Study guides & schedules
-│       ├── 00_schedule.md           #   12-day intensive prep schedule
-│       ├── 01_prep_tracker.md       #   Daily ritual tracker & oral drill checklist
-│       └── 02_data_design.md        #   Dataset design philosophy
+│   ├── 04_reference/                # Study guides & schedules
+│   │   ├── 00_schedule.md           #   12-day intensive prep schedule
+│   │   ├── 01_prep_tracker.md       #   Daily ritual tracker & oral drill checklist
+│   │   └── 02_data_design.md        #   Dataset design philosophy
+│   │
+│   └── 05_dsa/                      # DSA & ML coding patterns (learning material)
+│       ├── hashmap.md                #   Frequency, lookup, grouping
+│       ├── heap.md                   #   Top-K, ranking, priority
+│       ├── sliding_window.md         #   Fixed + variable window, chunking
+│       ├── binary_search.md          #   Standard, lower/upper bound, answer search
+│       ├── two_pointers.md           #   Sorted pair sum, palindrome
+│       ├── intervals.md              #   Merge, overlap, meeting rooms
+│       ├── dfs_bfs.md                #   Tree/graph traversal templates
+│       ├── dfs_trees.md              #   DFS mental model, worked examples
+│       ├── retrieval_patterns.md     #   Cosine, top-K, chunking, RAG, metrics
+│       ├── pattern_recognition.md    #   Keyword→pattern drills
+│       └── interview_framework.md    #   Strategy, edge cases, golden rule
 │
 └── .venv/                           # Python virtual environment
 ```
@@ -139,7 +155,8 @@ pip install numpy torch scikit-learn
 2. **Implement from memory** — after reading a note, try to write the corresponding code file from scratch. Compare with the implementation in `code/`.
 3. **Oral drill** — use `notes/04_reference/01_prep_tracker.md` for daily oral drill checklists. Explain each concept out loud as if in an interview.
 4. **System design** — read `notes/02_system_design/` sessions 0–5 in order, then practice with the mental framework.
-5. **Cheat sheets** — before the interview, skim `notes/03_cheat_sheets/` for pattern recognition.
+5. **DSA patterns** — learn coding patterns in `notes/05_dsa/` (hashmap, heap, sliding window, etc.).
+6. **Cheat sheets** — before the interview, skim `notes/03_cheat_sheets/` for quick-reference lookup (complexity table, keyword→pattern map, checklist).
 
 ### If you're learning ML/LLM fundamentals
 
@@ -222,6 +239,7 @@ pip install numpy torch scikit-learn
 | 02 | `02_logistic_regression.md` | Logistic regression | Sigmoid, log-odds, BCE, (p − y) gradient |
 | 03 | `03_kmeans.md` | K-Means | WCSS, assignment vs update, elbow method, outlier sensitivity |
 | 04 | `04_knn.md` | KNN | Lazy learner, bias-variance via K, complexity |
+| 05 | `05_optimization_algorithms.md` | Optimization | Batch GD, SGD, Mini-Batch, Momentum, Adam, adaptive learning rates |
 
 ### Notes — LLM (`notes/01_llm/`)
 
@@ -229,23 +247,25 @@ pip install numpy torch scikit-learn
 |---|-------|------------------|
 | 00 | Roadmap | Full topic checklist |
 | 01 | Tokenization & BPE | WordPiece, SentencePiece, vocab size tradeoffs |
-| 02 | Cross Entropy | KL divergence, label smoothing, focal loss |
-| 03 | CE From Logits | Fused implementation, gradient computation, vocab-level CE |
+| 02 | Embeddings | nn.Embedding as lookup table, static vs contextual, why similar words cluster |
+| 03 | Transformer Family | Encoder/decoder/cross-attention, BERT vs GPT vs T5, mental model |
 | 04 | Backpropagation | Chain rule, computational graph, activation storage, PyTorch autograd |
-| 05 | Transformer Advanced | ALiBi, pre/post-norm, SwiGLU, sliding window, FlashAttention-2 |
-| 06 | RoPE Implementation | Math derivation, interleaved vs half-split, scaling methods |
-| 07 | GQA & MQA | KV cache math, quality benchmarks, when to use |
-| 08 | FlashAttention | Online softmax, tiling, FA-2/3 improvements |
-| 09 | Perplexity, LayerNorm & RMSNorm | Calibration, norm comparisons, gradient analysis |
-| 10 | KV Cache & Decoding | PagedAttention, speculative decoding, penalties |
-| 11 | KV Cache Implementation | Pre-allocation, multi-layer, GQA-aware, prefix caching |
-| 12 | RAG | Hybrid search, reranking, RAGAS, multi-turn, chunking |
-| 13 | LoRA & Quantization | QLoRA, rank selection, BF16 vs FP16, quantization methods |
-| 14 | LoRA Forward Pass | Initialization, gradient flow, multi-adapter serving |
-| 15 | RLHF & DPO | GRPO, KTO/IPO/SimPO, reward hacking, RLAIF |
-| 16 | Scaling Laws | Chinchilla, overtraining economics, compute-optimal |
-| 17 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
-| 18 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
+| 05 | Cross Entropy | KL divergence, label smoothing, focal loss |
+| 06 | CE From Logits | Fused implementation, gradient computation, vocab-level CE |
+| 07 | Transformer Advanced | ALiBi, pre/post-norm, SwiGLU, sliding window, FlashAttention-2 |
+| 08 | RoPE Implementation | Math derivation, interleaved vs half-split, scaling methods |
+| 09 | GQA & MQA | KV cache math, quality benchmarks, when to use |
+| 10 | FlashAttention | Online softmax, tiling, FA-2/3 improvements |
+| 11 | Perplexity, LayerNorm & RMSNorm | Calibration, norm comparisons, gradient analysis |
+| 12 | KV Cache & Decoding | PagedAttention, speculative decoding, penalties |
+| 13 | KV Cache Implementation | Pre-allocation, multi-layer, GQA-aware, prefix caching |
+| 14 | RAG | Hybrid search, reranking, RAGAS, multi-turn, chunking |
+| 15 | LoRA & Quantization | QLoRA, rank selection, BF16 vs FP16, quantization methods |
+| 16 | LoRA Forward Pass | Initialization, gradient flow, multi-adapter serving |
+| 17 | LLM Training Pipeline | Pretraining, SFT, teacher forcing, exposure bias, PPO, DPO, GRPO evolution |
+| 18 | Scaling Laws | Chinchilla, overtraining economics, compute-optimal |
+| 19 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
+| 20 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
 
 ### Notes — System Design (`notes/02_system_design/`)
 
@@ -257,6 +277,34 @@ pip install numpy torch scikit-learn
 | 03 | `03_scale_estimation.md` | Scale estimation | GPU memory, LLM serving capacity, vector DB storage, training compute |
 | 04 | `04_distributed_systems.md` | Distributed systems | Training consistency, model replication, KV cache, rollouts, failure modes |
 | 05 | `05_infrastructure.md` | Infrastructure | GPU clusters, vector DBs, feature stores, model registry, caching, monitoring |
+
+### Notes — Cheat Sheets (`notes/03_cheat_sheets/`)
+
+Quick-reference lookup cards for last-minute review.
+
+| File | Topic |
+|------|-------|
+| `complexity_table.md` | One-page complexity lookup for all patterns |
+| `pattern_keywords.md` | Keyword → pattern map |
+| `ml_coding_checklist.md` | Last-minute "can you implement from memory?" checklist |
+
+### Notes — DSA & ML Coding Patterns (`notes/05_dsa/`)
+
+Learning material for coding interview patterns. One topic per file.
+
+| File | Topic |
+|------|-------|
+| `hashmap.md` | Frequency, lookup, grouping, duplicate detection |
+| `heap.md` | Top-K, ranking, priority queue |
+| `sliding_window.md` | Fixed + variable window, chunking with overlap |
+| `binary_search.md` | Standard, lower/upper bound, binary search on answer |
+| `two_pointers.md` | Sorted pair sum, palindrome, merge-style |
+| `intervals.md` | Merge, overlap detection, meeting rooms |
+| `dfs_bfs.md` | Tree/graph traversal templates, level order |
+| `dfs_trees.md` | DFS mental model, 5 worked examples, generic template |
+| `retrieval_patterns.md` | Cosine similarity, top-K retrieval, RAG, metrics (Recall@K, MRR, NDCG) |
+| `pattern_recognition.md` | Keyword→pattern drills, interview discipline |
+| `interview_framework.md` | Strategy, edge cases, golden rule |
 
 ---
 
