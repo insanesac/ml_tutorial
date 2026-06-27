@@ -58,16 +58,23 @@ algo/
 │       └── 08_rlhf.py               #  PPO, DPO, GRPO loss functions
 │
 ├── notes/
-│   ├── 00_ml/                      # ML algorithm deep-dive notes
+│   ├── 00_math/                    # Math foundations (read first)
+│   │   ├── linear_algebra/
+│   │   │   └── linear_algebra.md       # Vectors, matrices, dot product, broadcasting, shapes
+│   │   ├── probability_statistics/
+│   │   │   └── probability_information_statistics.md  # Probability, entropy, KL, Bayes, Gaussian
+│   │   └── calculus/
+│   │       ├── calculus.md              # Derivatives, chain rule, gradient descent
+│   │       └── optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
+│   │
+│   ├── 01_ml/                      # ML algorithm deep-dive notes
 │   │   ├── 00_universal_ml_notes.md #   Shape rules, complexity, oral drill checklist
 │   │   ├── 01_linear_regression.md  #   Linear regression & gradient descent
 │   │   ├── 02_logistic_regression.md#   Logistic regression, sigmoid, BCE
 │   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
-│   │   ├── 04_knn.md               #   KNN, lazy learning, bias-variance via K
-│   │   ├── 05_optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
-│   │   └── 06_probability_information_statistics.md  # Probability, entropy, KL, Bayes, Gaussian
+│   │   └── 04_knn.md               #   KNN, lazy learning, bias-variance via K
 │   │
-│   ├── 01_llm/                      # LLM/Transformer interview notes (21 files)
+│   ├── 02_llm/                      # LLM/Transformer interview notes (21 files)
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
 │   │   ├── 01_Tokenization & BPE.md
 │   │   ├── 02_Embeddings.md
@@ -90,7 +97,7 @@ algo/
 │   │   ├── 19_LLM Evaluation Metrics.md
 │   │   └── 20_MoE (Mixture of Experts).md
 │   │
-│   ├── 02_system_design/            # ML system design foundations
+│   ├── 03_system_design/            # ML system design foundations
 │   │   ├── 00_system_design_framework.md  # 11-step mental framework
 │   │   ├── 01_requirements.md       #   Functional/NFR, ML-specific requirements
 │   │   ├── 02_tradeoffs.md          #   Quality/latency/cost, cost of error
@@ -98,17 +105,17 @@ algo/
 │   │   ├── 04_distributed_systems.md#   Training consistency, replication, failure
 │   │   └── 05_infrastructure.md     #   GPU clusters, vector DBs, monitoring
 │   │
-│   ├── 03_cheat_sheets/             # Quick-reference lookup cards (not learning material)
+│   ├── 04_cheat_sheets/             # Quick-reference lookup cards (not learning material)
 │   │   ├── complexity_table.md         #   One-page complexity lookup
 │   │   ├── pattern_keywords.md         #   Keyword → pattern map
 │   │   └── ml_coding_checklist.md      #   Last-minute interview checklist
 │   │
-│   ├── 04_reference/                # Study guides & schedules
+│   ├── 05_reference/                # Study guides & schedules
 │   │   ├── 00_schedule.md           #   12-day intensive prep schedule
 │   │   ├── 01_prep_tracker.md       #   Daily ritual tracker & oral drill checklist
 │   │   └── 02_data_design.md        #   Dataset design philosophy
 │   │
-│   └── 05_dsa/                      # DSA & ML coding patterns (learning material)
+│   └── 06_dsa/                      # DSA & ML coding patterns (learning material)
 │       ├── hashmap.md                #   Frequency, lookup, grouping
 │       ├── heap.md                   #   Top-K, ranking, priority
 │       ├── sliding_window.md         #   Fixed + variable window, chunking
@@ -152,27 +159,28 @@ pip install numpy torch scikit-learn
 
 ### If you're preparing for an ML/LLM interview
 
-1. **Read the notes first** — start with `AI_ENGINEER_ROADMAP.md` for the full 15-module roadmap, then `notes/01_llm/00_LLM Transformer Interview Roadmap.md` for LLM-specific topics, then work through `01`–`18` in order.
+1. **Read the notes first** — start with `AI_ENGINEER_ROADMAP.md` for the full 15-module roadmap, then `notes/00_math/` for foundations, then `notes/02_llm/00_LLM Transformer Interview Roadmap.md` for LLM-specific topics, then work through `01`–`20` in order.
 2. **Implement from memory** — after reading a note, try to write the corresponding code file from scratch. Compare with the implementation in `code/`.
-3. **Oral drill** — use `notes/04_reference/01_prep_tracker.md` for daily oral drill checklists. Explain each concept out loud as if in an interview.
-4. **System design** — read `notes/02_system_design/` sessions 0–5 in order, then practice with the mental framework.
-5. **DSA patterns** — learn coding patterns in `notes/05_dsa/` (hashmap, heap, sliding window, etc.).
-6. **Cheat sheets** — before the interview, skim `notes/03_cheat_sheets/` for quick-reference lookup (complexity table, keyword→pattern map, checklist).
+3. **Oral drill** — use `notes/05_reference/01_prep_tracker.md` for daily oral drill checklists. Explain each concept out loud as if in an interview.
+4. **System design** — read `notes/03_system_design/` sessions 0–5 in order, then practice with the mental framework.
+5. **DSA patterns** — learn coding patterns in `notes/06_dsa/` (hashmap, heap, sliding window, etc.).
+6. **Cheat sheets** — before the interview, skim `notes/04_cheat_sheets/` for quick-reference lookup (complexity table, keyword→pattern map, checklist).
 
 ### If you're learning ML/LLM fundamentals
 
-1. Start with `code/00_ml/` — these are the building blocks. Each file is self-contained and demonstrates one concept with a tiny, deterministic dataset.
-2. Move to `code/01_llm_numpy/` — see how Transformer components work without framework abstractions.
-3. Then `code/02_llm_torch/` — see the same concepts as `nn.Module` classes, closer to real-world usage.
-4. Read the corresponding `notes/` file for deeper theory, derivations, and interview Q&A.
+1. Start with `notes/00_math/` — linear algebra, probability, and calculus foundations.
+2. Then `code/00_ml/` — these are the building blocks. Each file is self-contained and demonstrates one concept with a tiny, deterministic dataset.
+3. Move to `code/01_llm_numpy/` — see how Transformer components work without framework abstractions.
+4. Then `code/02_llm_torch/` — see the same concepts as `nn.Module` classes, closer to real-world usage.
+5. Read the corresponding `notes/` file for deeper theory, derivations, and interview Q&A.
 
 ### If you're reviewing before an interview
 
 - **Day 1–2**: Re-implement all `code/00_ml/` files from memory.
 - **Day 3–5**: Re-implement `code/01_llm_numpy/` files from memory.
 - **Day 6–7**: Walk through `code/02_llm_torch/` files, explain each line.
-- **Day 8–10**: Read all `notes/01_llm/` files, do oral drills.
-- **Day 11–12**: Practice system design using `notes/02_system_design/` framework.
+- **Day 8–10**: Read all `notes/02_llm/` files, do oral drills.
+- **Day 11–12**: Practice system design using `notes/03_system_design/` framework.
 
 ---
 
@@ -231,7 +239,18 @@ pip install numpy torch scikit-learn
 | `07_lora.py` | LoRA module | `LoRALinear` class, zero-init B, weight merging for inference |
 | `08_rlhf.py` | RLHF losses | PPO clip ratio, DPO Bradley-Terry, GRPO group normalization |
 
-### Notes — ML (`notes/00_ml/`)
+### Notes — Math (`notes/00_math/`)
+
+Foundational math — read before ML/LLM notes.
+
+| Subfolder | File | Topic | Key Concepts |
+|---|---|---|---|
+| `linear_algebra/` | `linear_algebra.md` | Linear Algebra | Vectors, matrices, dot product, broadcasting, shapes, complexity |
+| `probability_statistics/` | `probability_information_statistics.md` | Probability & Statistics | Entropy, cross entropy, KL divergence, mutual information, perplexity, Bayes, Gaussian, variance, correlation |
+| `calculus/` | `calculus.md` | Calculus | Derivatives, chain rule, partial derivatives, gradient descent |
+| `calculus/` | `optimization_algorithms.md` | Optimization | Batch GD, SGD, Mini-Batch, Momentum, Adam, adaptive learning rates |
+
+### Notes — ML (`notes/01_ml/`)
 
 | # | File | Topic | Key Concepts |
 |---|------|-------|--------------|
@@ -240,10 +259,8 @@ pip install numpy torch scikit-learn
 | 02 | `02_logistic_regression.md` | Logistic regression | Sigmoid, log-odds, BCE, (p − y) gradient |
 | 03 | `03_kmeans.md` | K-Means | WCSS, assignment vs update, elbow method, outlier sensitivity |
 | 04 | `04_knn.md` | KNN | Lazy learner, bias-variance via K, complexity |
-| 05 | `05_optimization_algorithms.md` | Optimization | Batch GD, SGD, Mini-Batch, Momentum, Adam, adaptive learning rates |
-| 06 | `06_probability_information_statistics.md` | Probability & Statistics | Entropy, cross entropy, KL divergence, perplexity, Bayes, Gaussian, variance, correlation |
 
-### Notes — LLM (`notes/01_llm/`)
+### Notes — LLM (`notes/02_llm/`)
 
 | # | Topic | L5 Interview Q&A |
 |---|-------|------------------|
@@ -269,7 +286,7 @@ pip install numpy torch scikit-learn
 | 19 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
 | 20 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
 
-### Notes — System Design (`notes/02_system_design/`)
+### Notes — System Design (`notes/03_system_design/`)
 
 | # | File | Topic | L5 Interview Q&A |
 |---|------|-------|------------------|
@@ -280,7 +297,7 @@ pip install numpy torch scikit-learn
 | 04 | `04_distributed_systems.md` | Distributed systems | Training consistency, model replication, KV cache, rollouts, failure modes |
 | 05 | `05_infrastructure.md` | Infrastructure | GPU clusters, vector DBs, feature stores, model registry, caching, monitoring |
 
-### Notes — Cheat Sheets (`notes/03_cheat_sheets/`)
+### Notes — Cheat Sheets (`notes/04_cheat_sheets/`)
 
 Quick-reference lookup cards for last-minute review.
 
@@ -290,7 +307,7 @@ Quick-reference lookup cards for last-minute review.
 | `pattern_keywords.md` | Keyword → pattern map |
 | `ml_coding_checklist.md` | Last-minute "can you implement from memory?" checklist |
 
-### Notes — DSA & ML Coding Patterns (`notes/05_dsa/`)
+### Notes — DSA & ML Coding Patterns (`notes/06_dsa/`)
 
 Learning material for coding interview patterns. One topic per file.
 
@@ -312,7 +329,7 @@ Learning material for coding interview patterns. One topic per file.
 
 ## Study Schedule
 
-A 12-day intensive plan is in `notes/04_reference/00_schedule.md`. The daily ritual:
+A 12-day intensive plan is in `notes/05_reference/00_schedule.md`. The daily ritual:
 
 1. **Re-implement** 2–3 core algorithms from memory (no looking at code).
 2. **Oral drill** — explain the algorithm out loud as if teaching someone.
