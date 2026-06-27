@@ -64,7 +64,8 @@ algo/
 │   │   ├── 02_logistic_regression.md#   Logistic regression, sigmoid, BCE
 │   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
 │   │   ├── 04_knn.md               #   KNN, lazy learning, bias-variance via K
-│   │   └── 05_optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
+│   │   ├── 05_optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
+│   │   └── 06_probability_information_statistics.md  # Probability, entropy, KL, Bayes, Gaussian
 │   │
 │   ├── 01_llm/                      # LLM/Transformer interview notes (21 files)
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
@@ -240,6 +241,7 @@ pip install numpy torch scikit-learn
 | 03 | `03_kmeans.md` | K-Means | WCSS, assignment vs update, elbow method, outlier sensitivity |
 | 04 | `04_knn.md` | KNN | Lazy learner, bias-variance via K, complexity |
 | 05 | `05_optimization_algorithms.md` | Optimization | Batch GD, SGD, Mini-Batch, Momentum, Adam, adaptive learning rates |
+| 06 | `06_probability_information_statistics.md` | Probability & Statistics | Entropy, cross entropy, KL divergence, perplexity, Bayes, Gaussian, variance, correlation |
 
 ### Notes — LLM (`notes/01_llm/`)
 
