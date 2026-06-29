@@ -59,56 +59,65 @@ algo/
 │       └── 09_swiglu.py             #  SwiGLU FFN + LLaMA-style transformer block
 │
 ├── notes/
-│   ├── 00_math/                    # Math foundations (read first)
+│   ├── 00_math/                    # Math foundations (read first, in this order)
 │   │   ├── linear_algebra/
 │   │   │   └── linear_algebra.md       # Vectors, matrices, dot product, broadcasting, shapes
-│   │   ├── probability_statistics/
-│   │   │   └── probability_information_statistics.md  # Probability, entropy, KL, Bayes, Gaussian
 │   │   ├── calculus/
 │   │   │   ├── calculus.md              # Derivatives, chain rule, gradient descent
 │   │   │   └── optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
+│   │   ├── probability_statistics/
+│   │   │   └── probability_information_statistics.md  # Probability, entropy, KL, Bayes, Gaussian
 │   │   ├── activation_functions/
 │   │   │   └── activation_functions.md  # Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, SiLU evolution
 │   │   └── normalization_regularization/
 │   │       └── normalization_dropout_calibration.md  # BatchNorm, LayerNorm, RMSNorm, Dropout, Calibration
 │   │
-│   ├── 01_ml/                      # ML algorithm deep-dive notes
+│   ├── 01_ml/                      # ML algorithm deep-dive notes (learning order)
 │   │   ├── 00_universal_ml_notes.md #   Shape rules, complexity, oral drill checklist
 │   │   ├── 01_linear_regression.md  #   Linear regression & gradient descent
 │   │   ├── 02_logistic_regression.md#   Logistic regression, sigmoid, BCE
 │   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
 │   │   ├── 04_knn.md               #   KNN, lazy learning, bias-variance via K
-│   │   ├── 05_sequence_models.md   #   RNN, LSTM, GRU, Seq2Seq, Attention evolution
-│   │   └── 06_decision_trees_random_forest_xgboost_pca.md  # Trees, ensembles, PCA
+│   │   ├── 07_cross_validation_pr_curve_naive_bayes.md  # Evaluation + classical classifier
+│   │   ├── 06_decision_trees_random_forest_xgboost_pca.md  # Trees, ensembles, PCA
+│   │   └── 05_sequence_models.md   #   RNN, LSTM, GRU, Seq2Seq → bridge to LLMs
 │   │
-│   ├── 02_llm/                      # LLM/Transformer interview notes (21 files)
+│   ├── 02_llm/                      # LLM/Transformer notes (27 files, learning order)
+│   │   │
+│   │   │  ── Foundations ──
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
 │   │   ├── 01_Tokenization & BPE.md
 │   │   ├── 02_Embeddings.md
-│   │   ├── 03_Transformer Family.md
 │   │   ├── 04_Backpropagation.md
 │   │   ├── 05_Cross Entropy.md
 │   │   ├── 06_Cross Entropy From Logits.md
+│   │   ├── 11_Perplexity, LayerNorm & RMSNorm.md
+│   │   │
+│   │   │  ── Transformer Architecture ──
+│   │   ├── 03_Transformer Family.md
 │   │   ├── 07_Transformer Advanced Topics.md
 │   │   ├── 08_RoPE Implementation.md
 │   │   ├── 09_GQA & MQA.md
 │   │   ├── 10_FlashAttention Intuition.md
-│   │   ├── 11_Perplexity, LayerNorm & RMSNorm.md
 │   │   ├── 12_KV Cache & Decoding.md
 │   │   ├── 13_KV Cache Implementation.md
-│   │   ├── 14_RAG.md
-│   │   ├── 15_LoRA & Quantization.md
-│   │   ├── 16_LoRA Forward Pass.md
+│   │   ├── 26_Beam Search.md                  #  Decoding strategy (fits with KV Cache)
+│   │   │
+│   │   │  ── Training & Fine-Tuning ──
 │   │   ├── 17_LLM Training Pipeline.md
 │   │   ├── 18_Scaling Laws.md
-│   │   ├── 19_LLM Evaluation Metrics.md
+│   │   ├── 15_LoRA & Quantization.md
+│   │   ├── 16_LoRA Forward Pass.md
+│   │   ├── 21_ALiBi, BART, UL2 & SwiGLU.md  #  Advanced architectures
 │   │   ├── 20_MoE (Mixture of Experts).md
-│   │   ├── 21_ALiBi, BART, UL2 & SwiGLU.md  #  ALiBi bias, BART denoising, UL2 multi-objective, SwiGLU gated FFN
+│   │   │
+│   │   │  ── Evaluation, Retrieval & Production ──
+│   │   ├── 19_LLM Evaluation Metrics.md
+│   │   ├── 14_RAG.md
 │   │   ├── 22_Advanced RAG Techniques.md     #  Metadata filtering, parent-child, compression, HyDE, multi-query
-│   │   ├── 23_Efficient LLMs.md              #  Continuous batching, streaming, mixed precision, gradient checkpointing, prompt/prefix tuning
-│   │   ├── 24_AI Safety & Modern Reasoning.md #  Prompt injection, guardrails, constitutional AI, CoT, test-time compute, reasoning models
-│   │   ├── 25_Production ML Data Pipelines.md #  Data collection, validation, feature store, deployment, drift detection, retraining
-│   │   └── 26_Beam Search.md                  #  Beam width, log probabilities, length normalization, vs greedy, why not for chat LLMs
+│   │   ├── 23_Efficient LLMs.md              #  Continuous batching, streaming, mixed precision, gradient checkpointing
+│   │   ├── 25_Production ML Data Pipelines.md #  Data collection, validation, feature store, deployment, drift
+│   │   └── 24_AI Safety & Modern Reasoning.md #  Prompt injection, guardrails, constitutional AI, CoT, reasoning models
 │   │
 │   ├── 03_system_design/            # ML system design foundations
 │   │   ├── 00_system_design_framework.md  # 11-step mental framework
@@ -130,16 +139,23 @@ algo/
 │   │
 │   └── 06_dsa/                      # DSA & ML coding patterns (learning material)
 │       ├── hashmap.md                #   Frequency, lookup, grouping
-│       ├── heap.md                   #   Top-K, ranking, priority
+│       ├── two_pointers.md           #   Sorted pair sum, palindrome
 │       ├── sliding_window.md         #   Fixed + variable window, chunking
 │       ├── binary_search.md          #   Standard, lower/upper bound, answer search
-│       ├── two_pointers.md           #   Sorted pair sum, palindrome
 │       ├── intervals.md              #   Merge, overlap, meeting rooms
+│       ├── heap.md                   #   Top-K, ranking, priority
 │       ├── dfs_bfs.md                #   Tree/graph traversal templates
 │       ├── dfs_trees.md              #   DFS mental model, worked examples
+│       ├── dynamic_programming.md    #   DP patterns, memoization vs tabulation
 │       ├── retrieval_patterns.md     #   Cosine, top-K, chunking, RAG, metrics
 │       ├── pattern_recognition.md    #   Keyword→pattern drills
 │       └── interview_framework.md    #   Strategy, edge cases, golden rule
+│
+├── practice/                        # Reimplementation drills (local only, .gitignored)
+│   ├── 00_linear_regression.txt     #  Reimplement from memory (no autocomplete)
+│   ├── 01_logistic_regression.txt
+│   ├── ...                          #  39 empty .txt files, one per topic
+│   └── 38_swiglu.txt
 │
 └── .venv/                           # Python virtual environment
 ```
@@ -255,18 +271,20 @@ pip install numpy torch scikit-learn
 
 ### Notes — Math (`notes/00_math/`)
 
-Foundational math — read before ML/LLM notes.
+Foundational math — read before ML/LLM notes, in this order.
 
 | Subfolder | File | Topic | Key Concepts |
 |---|---|---|---|
 | `linear_algebra/` | `linear_algebra.md` | Linear Algebra | Vectors, matrices, dot product, broadcasting, shapes, complexity |
-| `probability_statistics/` | `probability_information_statistics.md` | Probability & Statistics | Entropy, cross entropy, KL divergence, mutual information, perplexity, Bayes, Gaussian, variance, correlation |
 | `calculus/` | `calculus.md` | Calculus | Derivatives, chain rule, partial derivatives, gradient descent |
 | `calculus/` | `optimization_algorithms.md` | Optimization | Batch GD, SGD, Mini-Batch, Momentum, Adam, adaptive learning rates |
+| `probability_statistics/` | `probability_information_statistics.md` | Probability & Statistics | Entropy, cross entropy, KL divergence, mutual information, perplexity, Bayes, Gaussian, variance, correlation |
 | `activation_functions/` | `activation_functions.md` | Activation Functions | Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, SiLU evolution, dying ReLU, smooth gating |
 | `normalization_regularization/` | `normalization_dropout_calibration.md` | Norm, Dropout & Calibration | BatchNorm, LayerNorm, RMSNorm, Dropout, inverted dropout, confidence calibration, temperature scaling, label smoothing |
 
 ### Notes — ML (`notes/01_ml/`)
+
+Ordered by learning sequence — classical algorithms first, sequence models last as bridge to LLMs.
 
 | # | File | Topic | Key Concepts |
 |---|------|-------|--------------|
@@ -275,41 +293,48 @@ Foundational math — read before ML/LLM notes.
 | 02 | `02_logistic_regression.md` | Logistic regression | Sigmoid, log-odds, BCE, (p − y) gradient |
 | 03 | `03_kmeans.md` | K-Means | WCSS, assignment vs update, elbow method, outlier sensitivity |
 | 04 | `04_knn.md` | KNN | Lazy learner, bias-variance via K, complexity |
-| 05 | `05_sequence_models.md` | Sequence Models | RNN, LSTM, GRU, Seq2Seq, Attention evolution |
+| 07 | `07_cross_validation_pr_curve_naive_bayes.md` | Evaluation & Classical Classifier | K-fold cross validation, precision-recall curve, Naive Bayes, threshold trade-off |
 | 06 | `06_decision_trees_random_forest_xgboost_pca.md` | Trees, Ensembles & PCA | Decision trees, Gini/Entropy, Random Forest, XGBoost, PCA, dimensionality reduction |
-| 07 | `07_cross_validation_pr_curve_naive_bayes.md` | Final Classical ML | K-fold cross validation, precision-recall curve, Naive Bayes, threshold trade-off |
+| 05 | `05_sequence_models.md` | Sequence Models | RNN, LSTM, GRU, Seq2Seq, Attention evolution → bridge to LLMs |
 
 ### Notes — LLM (`notes/02_llm/`)
 
+Ordered by learning sequence: **Foundations → Architecture → Training → Evaluation & Production**.
+File numbers are identifiers (not sequential in reading order).
+
 | # | Topic | L5 Interview Q&A |
 |---|-------|------------------|
+| | **Foundations** | |
 | 00 | Roadmap | Full topic checklist |
 | 01 | Tokenization & BPE | WordPiece, SentencePiece, vocab size tradeoffs |
 | 02 | Embeddings | nn.Embedding as lookup table, static vs contextual, why similar words cluster |
-| 03 | Transformer Family | Encoder/decoder/cross-attention, BERT vs GPT vs T5, mental model |
 | 04 | Backpropagation | Chain rule, computational graph, activation storage, PyTorch autograd |
 | 05 | Cross Entropy | KL divergence, label smoothing, focal loss |
 | 06 | CE From Logits | Fused implementation, gradient computation, vocab-level CE |
+| 11 | Perplexity, LayerNorm & RMSNorm | Calibration, norm comparisons, gradient analysis |
+| | **Transformer Architecture** | |
+| 03 | Transformer Family | Encoder/decoder/cross-attention, BERT vs GPT vs T5, mental model |
 | 07 | Transformer Advanced | ALiBi, pre/post-norm, SwiGLU, sliding window, FlashAttention-2 |
 | 08 | RoPE Implementation | Math derivation, interleaved vs half-split, scaling methods |
 | 09 | GQA & MQA | KV cache math, quality benchmarks, when to use |
 | 10 | FlashAttention | Online softmax, tiling, FA-2/3 improvements |
-| 11 | Perplexity, LayerNorm & RMSNorm | Calibration, norm comparisons, gradient analysis |
 | 12 | KV Cache & Decoding | PagedAttention, speculative decoding, penalties |
 | 13 | KV Cache Implementation | Pre-allocation, multi-layer, GQA-aware, prefix caching |
-| 14 | RAG | Hybrid search, reranking, RAGAS, multi-turn, chunking |
-| 15 | LoRA & Quantization | QLoRA, rank selection, BF16 vs FP16, quantization methods |
-| 16 | LoRA Forward Pass | Initialization, gradient flow, multi-adapter serving |
+| 26 | Beam Search | Beam width, log probability scoring, length normalization, vs greedy decoding |
+| | **Training & Fine-Tuning** | |
 | 17 | LLM Training Pipeline | Pretraining, SFT, teacher forcing, exposure bias, PPO, DPO, GRPO evolution |
 | 18 | Scaling Laws | Chinchilla, overtraining economics, compute-optimal |
-| 19 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
-| 20 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
+| 15 | LoRA & Quantization | QLoRA, rank selection, BF16 vs FP16, quantization methods |
+| 16 | LoRA Forward Pass | Initialization, gradient flow, multi-adapter serving |
 | 21 | ALiBi, BART, UL2 & SwiGLU | ALiBi bias, BART denoising, UL2 multi-objective, SwiGLU gated FFN |
+| 20 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
+| | **Evaluation, Retrieval & Production** | |
+| 19 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
+| 14 | RAG | Hybrid search, reranking, RAGAS, multi-turn, chunking |
 | 22 | Advanced RAG Techniques | Metadata filtering, parent-child, context compression, query expansion, HyDE, multi-query |
 | 23 | Efficient LLMs | Continuous batching, streaming, mixed precision, gradient checkpointing, prompt/prefix tuning, PEFT comparison |
-| 24 | AI Safety & Modern Reasoning | Prompt injection, guardrails, constitutional AI, chain of thought, test-time compute, reasoning models |
 | 25 | Production ML Data Pipelines | Data collection, validation, feature store, deployment strategies, drift detection, retraining |
-| 26 | Beam Search | Beam width, log probability scoring, length normalization, vs greedy decoding, why not for chat LLMs |
+| 24 | AI Safety & Modern Reasoning | Prompt injection, guardrails, constitutional AI, chain of thought, test-time compute, reasoning models |
 
 ### Notes — System Design (`notes/03_system_design/`)
 
@@ -339,13 +364,14 @@ Learning material for coding interview patterns. One topic per file.
 | File | Topic |
 |------|-------|
 | `hashmap.md` | Frequency, lookup, grouping, duplicate detection |
-| `heap.md` | Top-K, ranking, priority queue |
+| `two_pointers.md` | Sorted pair sum, palindrome, merge-style |
 | `sliding_window.md` | Fixed + variable window, chunking with overlap |
 | `binary_search.md` | Standard, lower/upper bound, binary search on answer |
-| `two_pointers.md` | Sorted pair sum, palindrome, merge-style |
 | `intervals.md` | Merge, overlap detection, meeting rooms |
+| `heap.md` | Top-K, ranking, priority queue |
 | `dfs_bfs.md` | Tree/graph traversal templates, level order |
 | `dfs_trees.md` | DFS mental model, 5 worked examples, generic template |
+| `dynamic_programming.md` | DP patterns, memoization vs tabulation, classic problems |
 | `retrieval_patterns.md` | Cosine similarity, top-K retrieval, RAG, metrics (Recall@K, MRR, NDCG) |
 | `pattern_recognition.md` | Keyword→pattern drills, interview discipline |
 | `interview_framework.md` | Strategy, edge cases, golden rule |
