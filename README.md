@@ -55,7 +55,8 @@ algo/
 │       ├── 05_rope_module.py        #  RoPE as nn.Module (registered buffers)
 │       ├── 06_kv_cache.py           #  KV cache as nn.Module
 │       ├── 07_lora.py               #  LoRALinear nn.Module + weight merging
-│       └── 08_rlhf.py               #  PPO, DPO, GRPO loss functions
+│       ├── 08_rlhf.py               #  PPO, DPO, GRPO loss functions
+│       └── 09_swiglu.py             #  SwiGLU FFN + LLaMA-style transformer block
 │
 ├── notes/
 │   ├── 00_math/                    # Math foundations (read first)
@@ -63,16 +64,22 @@ algo/
 │   │   │   └── linear_algebra.md       # Vectors, matrices, dot product, broadcasting, shapes
 │   │   ├── probability_statistics/
 │   │   │   └── probability_information_statistics.md  # Probability, entropy, KL, Bayes, Gaussian
-│   │   └── calculus/
-│   │       ├── calculus.md              # Derivatives, chain rule, gradient descent
-│   │       └── optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
+│   │   ├── calculus/
+│   │   │   ├── calculus.md              # Derivatives, chain rule, gradient descent
+│   │   │   └── optimization_algorithms.md  # Batch GD, SGD, Mini-Batch, Momentum, Adam
+│   │   ├── activation_functions/
+│   │   │   └── activation_functions.md  # Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, SiLU evolution
+│   │   └── normalization_regularization/
+│   │       └── normalization_dropout_calibration.md  # BatchNorm, LayerNorm, RMSNorm, Dropout, Calibration
 │   │
 │   ├── 01_ml/                      # ML algorithm deep-dive notes
 │   │   ├── 00_universal_ml_notes.md #   Shape rules, complexity, oral drill checklist
 │   │   ├── 01_linear_regression.md  #   Linear regression & gradient descent
 │   │   ├── 02_logistic_regression.md#   Logistic regression, sigmoid, BCE
 │   │   ├── 03_kmeans.md             #   K-Means clustering, WCSS, elbow method
-│   │   └── 04_knn.md               #   KNN, lazy learning, bias-variance via K
+│   │   ├── 04_knn.md               #   KNN, lazy learning, bias-variance via K
+│   │   ├── 05_sequence_models.md   #   RNN, LSTM, GRU, Seq2Seq, Attention evolution
+│   │   └── 06_decision_trees_random_forest_xgboost_pca.md  # Trees, ensembles, PCA
 │   │
 │   ├── 02_llm/                      # LLM/Transformer interview notes (21 files)
 │   │   ├── 00_LLM Transformer Interview Roadmap.md
@@ -95,7 +102,13 @@ algo/
 │   │   ├── 17_LLM Training Pipeline.md
 │   │   ├── 18_Scaling Laws.md
 │   │   ├── 19_LLM Evaluation Metrics.md
-│   │   └── 20_MoE (Mixture of Experts).md
+│   │   ├── 20_MoE (Mixture of Experts).md
+│   │   ├── 21_ALiBi, BART, UL2 & SwiGLU.md  #  ALiBi bias, BART denoising, UL2 multi-objective, SwiGLU gated FFN
+│   │   ├── 22_Advanced RAG Techniques.md     #  Metadata filtering, parent-child, compression, HyDE, multi-query
+│   │   ├── 23_Efficient LLMs.md              #  Continuous batching, streaming, mixed precision, gradient checkpointing, prompt/prefix tuning
+│   │   ├── 24_AI Safety & Modern Reasoning.md #  Prompt injection, guardrails, constitutional AI, CoT, test-time compute, reasoning models
+│   │   ├── 25_Production ML Data Pipelines.md #  Data collection, validation, feature store, deployment, drift detection, retraining
+│   │   └── 26_Beam Search.md                  #  Beam width, log probabilities, length normalization, vs greedy, why not for chat LLMs
 │   │
 │   ├── 03_system_design/            # ML system design foundations
 │   │   ├── 00_system_design_framework.md  # 11-step mental framework
@@ -238,6 +251,7 @@ pip install numpy torch scikit-learn
 | `06_kv_cache.py` | KV cache module | `torch.cat` append, reset, `nn.Module` wrapper |
 | `07_lora.py` | LoRA module | `LoRALinear` class, zero-init B, weight merging for inference |
 | `08_rlhf.py` | RLHF losses | PPO clip ratio, DPO Bradley-Terry, GRPO group normalization |
+| `09_swiglu.py` | SwiGLU FFN | Gated FFN (SiLU * gate), LLaMA-style block, RMSNorm, pre-norm, param comparison |
 
 ### Notes — Math (`notes/00_math/`)
 
@@ -249,6 +263,8 @@ Foundational math — read before ML/LLM notes.
 | `probability_statistics/` | `probability_information_statistics.md` | Probability & Statistics | Entropy, cross entropy, KL divergence, mutual information, perplexity, Bayes, Gaussian, variance, correlation |
 | `calculus/` | `calculus.md` | Calculus | Derivatives, chain rule, partial derivatives, gradient descent |
 | `calculus/` | `optimization_algorithms.md` | Optimization | Batch GD, SGD, Mini-Batch, Momentum, Adam, adaptive learning rates |
+| `activation_functions/` | `activation_functions.md` | Activation Functions | Sigmoid, Tanh, ReLU, Leaky ReLU, GELU, SiLU evolution, dying ReLU, smooth gating |
+| `normalization_regularization/` | `normalization_dropout_calibration.md` | Norm, Dropout & Calibration | BatchNorm, LayerNorm, RMSNorm, Dropout, inverted dropout, confidence calibration, temperature scaling, label smoothing |
 
 ### Notes — ML (`notes/01_ml/`)
 
@@ -259,6 +275,9 @@ Foundational math — read before ML/LLM notes.
 | 02 | `02_logistic_regression.md` | Logistic regression | Sigmoid, log-odds, BCE, (p − y) gradient |
 | 03 | `03_kmeans.md` | K-Means | WCSS, assignment vs update, elbow method, outlier sensitivity |
 | 04 | `04_knn.md` | KNN | Lazy learner, bias-variance via K, complexity |
+| 05 | `05_sequence_models.md` | Sequence Models | RNN, LSTM, GRU, Seq2Seq, Attention evolution |
+| 06 | `06_decision_trees_random_forest_xgboost_pca.md` | Trees, Ensembles & PCA | Decision trees, Gini/Entropy, Random Forest, XGBoost, PCA, dimensionality reduction |
+| 07 | `07_cross_validation_pr_curve_naive_bayes.md` | Final Classical ML | K-fold cross validation, precision-recall curve, Naive Bayes, threshold trade-off |
 
 ### Notes — LLM (`notes/02_llm/`)
 
@@ -285,6 +304,12 @@ Foundational math — read before ML/LLM notes.
 | 18 | Scaling Laws | Chinchilla, overtraining economics, compute-optimal |
 | 19 | LLM Evaluation | G-Eval, MT-Bench, AGIEval, data contamination, LLM-as-judge |
 | 20 | MoE | DeepSeek MoE, load balancing, capacity factor, MoE serving |
+| 21 | ALiBi, BART, UL2 & SwiGLU | ALiBi bias, BART denoising, UL2 multi-objective, SwiGLU gated FFN |
+| 22 | Advanced RAG Techniques | Metadata filtering, parent-child, context compression, query expansion, HyDE, multi-query |
+| 23 | Efficient LLMs | Continuous batching, streaming, mixed precision, gradient checkpointing, prompt/prefix tuning, PEFT comparison |
+| 24 | AI Safety & Modern Reasoning | Prompt injection, guardrails, constitutional AI, chain of thought, test-time compute, reasoning models |
+| 25 | Production ML Data Pipelines | Data collection, validation, feature store, deployment strategies, drift detection, retraining |
+| 26 | Beam Search | Beam width, log probability scoring, length normalization, vs greedy decoding, why not for chat LLMs |
 
 ### Notes — System Design (`notes/03_system_design/`)
 
